@@ -6,10 +6,13 @@
 #set -o xtrace
 
 ESCAPER="$BINDIR"/jsescape.sh
-RESOLVER="$BINDIR"/../js/Resolver.js
-PARSER="$BINDIR"/../js/parser.js
-JSON="$BINDIR"/../js/json2.js #rhino needs this, jsc does not
+RESOLVER="$JSDIR"/Resolver.js
+PARSER="$JSDIR"/parser.js
 RUNNER="$BINDIR"/jsrun.sh
+if [[ ! "$ENGINECAPS" =~ hasJson=true  ]]; then
+	#rhino needs this, jsc does not
+	JSON="$JSDIR"/json2.js
+fi
 
 # resolve module id to url
 

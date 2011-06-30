@@ -35,16 +35,43 @@
 		},
 
 		toModuleInfo: function (id) {
-			var absId;
-			absId = this.toAbsMid(id);
+			var absId, pluginParts;
+			if (isPlugin(id)) {
+				pluginParts = extractPluginIdParts(id);
+				absId = this.toAbsMid(pluginParts.resourceId);
+				if (pluginParts.pluginId.indexOf('/') < 0) {
+					pluginParts.pluginId = joinPath(this.pluginPath, pluginParts.pluginId);
+				}
+			}
+			else {
+				absId = this.toAbsMid(id);
+			}
 			return {
 				parentId: this.parentId,
 				moduleId: absId,
-				moduleUrl: resolvePath(absId, this.paths, this.pathSearchRx)
+				moduleUrl: resolvePath(absId, this.paths, this.pathSearchRx),
+				pluginData: pluginParts
 			};
 		}
 
 	};
+
+	/* the following were copied from Builder.js */
+
+	function isPlugin (moduleId) {
+		return moduleId.indexOf('!') >= 0;
+	}
+
+	function extractPluginIdParts (resourceId) {
+		var parts;
+		parts = resourceId.split('!');
+		return {
+			all: parts,
+			pluginId: parts[0],
+			resourceId: parts[1],
+			suffixes: parts.slice(2)
+		};
+	}
 
 	/* the following functions and regexes copied from curl.js */
 
