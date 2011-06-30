@@ -3,6 +3,9 @@
 BINDIR=`dirname $0`
 BINDIR=${BINDIR:-.}
 
+# optimization for jsrun.sh
+JSTMP=$(mktemp -t cram)
+
 USAGE="opt -r root_module_id -e path_to_js_engine"
 COLLECTOR="$BINDIR/collector.sh"
 
@@ -24,6 +27,12 @@ do
 			shift
 		;;
 
+		-c|--config)
+			shift
+			CONFIG=$(echo $(cat "$1")) #echo removes line feeds!
+			shift
+		;;
+
 		-h|--help)
 			echo "$USAGE"
 			exit 0
@@ -33,8 +42,6 @@ do
 
 done
 
-export JSENGINE BINDIR
+export JSENGINE BINDIR CONFIG
 
-#echo "js engine = $JSENGINE"
-
-. "$COLLECTOR" "$ROOTID"
+"$COLLECTOR" "$ROOTID"

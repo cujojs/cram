@@ -1,16 +1,23 @@
 # dependency collector
-# input: module id
+# input: module id, parent id
 # output: dependency module ids separated by commas
 # assumes $JSENGINE and $BINDIR are defined
 
+#set -o xtrace
+
 ESCAPER="$BINDIR"/jsescape.sh
+RESOLVER="$BINDIR"/../js/Resolver.js
+PARSER="$BINDIR"/../js/parser.js
+JSON="$BINDIR"/../js/json2.js #rhino needs this, jsc does not
+RUNNER="$BINDIR"/jsrun.sh
 
-MODSRC=`$ESCAPER < "$1"`
+# resolve module id to url
 
-JSCMD="print(1);"
-#JSCMD="print(parser.parse(\\\"$MODSRC\\\"));"
+JSCMD="var resolver = new Resolver(\"$2\", $CONFIG); print(resolver.toUrl(\"$1\"));"
+MODURL=$("$RUNNER" "$JSCMD" "$RESOLVER")
+MODSRC=$($ESCAPER < "$MODURL")
 
-#echo "$MODSRC"
-#echo "$JSCMD"
+# find dependencies in this module
 
-"$JSENGINE" "$BINDIR/../js/parser.js" -e \"$JSCMD\"
+JSCMD="var resolver = new Resolver(\"$1\", $CONFIG); print(JSON.stringify(parser.parse(\"$MODSRC\").map(function (dep) { return resolver.toModuleInfo(dep); })));"
+"$RUNNER" "$JSCMD" "$RESOLVER" "$PARSER" "$JSON"

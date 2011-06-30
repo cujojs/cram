@@ -22,7 +22,7 @@
 	cleanDepsRx = /["']+\s*([^,"']+)/g;
 
 	function parse (source) {
-		// dependencies found
+		// collect dependencies found
 		var deps = [];
 
 		// remove those pesky comments

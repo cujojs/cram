@@ -2,16 +2,16 @@
 "use strict";
 
 	// constructor
-	function Resolver (parentId, baseUrl, config) {
+	function Resolver (parentId, config) {
 		
 		this.parentId = parentId ? parentId.substr(0, parentId.lastIndexOf('/')) : '';
-		this.baseUrl = baseUrl;
 		this.config = config;
-		this.pluginPath = config['pluginPath'] || 'curl/plugin';
+		this.baseUrl = config.baseUrl;
+		this.pluginPath = config.pluginPath || 'curl/plugin';
 		this.paths = extractPathsFromCfg(config);
 
 		// create path matcher
-		var pathList, paths = this.paths;
+		var pathList = [], paths = this.paths;
 		for (var p in paths) {
 			pathList.push(p);
 		}
@@ -31,7 +31,17 @@
 		},
 
 		toAbsMid: function toAbsMid (id) {
-			return resolvePath(normalizeName(id, this.parentId), this.mappings);
+			return resolvePath(normalizeName(id, this.parentId), this.paths, this.pathSearchRx);
+		},
+
+		toModuleInfo: function (id) {
+			var absId;
+			absId = this.toAbsMid(id);
+			return {
+				parentId: this.parentId,
+				moduleId: absId,
+				moduleUrl: resolvePath(absId, this.paths, this.pathSearchRx)
+			};
 		}
 
 	};
@@ -67,13 +77,19 @@
 		return name.replace(normalizeRx, baseName + '/');
 	}
 
-	function resolvePath (name, paths) {
+	function isType (obj, type) {
+		return toString.call(obj).indexOf('[object ' + type) == 0;
+	}
+
+	/* the following functions were adapted from curl.js */
+
+	function resolvePath (name, paths, rx) {
 		// searches through the configured path mappings and packages
 		// if the resulting module is part of a package, also return the main
 		// module so it can be loaded.
 
 		var pathInfo, path;
-		path = name.replace(this.pathSearchRx, function (match) {
+		path = name.replace(rx, function (match) {
 
 			pathInfo = paths[match] || {};
 
@@ -98,12 +114,6 @@
 		// TODO: deal with possible existing .js extension already?
 		return (baseUrl && !absUrlRx.test(path) ? joinPath(baseUrl, path) : path) + (hasExtRx.test(path) ? '' : '.js');
 	}
-
-	function isType (obj, type) {
-		return toString.call(obj).indexOf('[object ' + type) == 0;
-	}
-
-	/* the following functions were adapted from curl.js */
 
 	function extractPathsFromCfg (cfg) {
 		var p, pStrip, path, pathList = [], paths = {};
@@ -149,5 +159,7 @@
 
 		return descriptor;
 	}
+
+	global.Resolver = Resolver;
 
 }(this));
