@@ -15,8 +15,9 @@
 		// loader is a module loader. parameters:
 		//   moduleId: the normalized module id
 		loader: null,
-		// fetcher is a function used to fetch a text resource. only plugins
-		// 	 use this feature currently. parameters:
+		// fetcher is a function used to fetch a text resource. plugins
+		// 	 use this feature to get text content. It's also used to grab
+		//   the source code for modules. parameters:
 		//   resourceId: the normalized resource id
 		fetcher: null,
 		// writer is a function that a plugin may call to add code to the
@@ -58,7 +59,7 @@
 		buildAmdModule: function buildAmdModule (resourceId) {
 			var source = this.fetcher(resourceId);
 			this.writer(source);
-		}
+			}
 
 	};
 
