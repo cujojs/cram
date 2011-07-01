@@ -10,10 +10,10 @@
 
 		// resolver is a module id and or url resolver. it has two methods:
 		//   toUrl(moduleId)
-		//   toAbdMid(moduleId, parentId)
+		//   toAbsMid(moduleId, parentId)
 		resolver: null,
 
-		// loader is a module loader. parameters:
+		// loader is a module loader function. parameters:
 		//   moduleId: the normalized module id
 		loader: null,
 
@@ -30,17 +30,16 @@
 		writer: null,
 
 		build: function build (moduleList, config) {
-			// TODO: do we really need this much module info? why not just id?
-			// moduleList is an array of normalized module ids:
-			moduleList.forEach(function (moduleId) {
+			// moduleList is an array of module info objects:
+			moduleList.forEach(function (moduleInfo) {
 				// is this a plugin-based module/resource?
-				if (this.isPlugin(moduleId)) {
-					this.buildPluginResource(moduleId, config);
+				if (this.isPlugin(moduleInfo.moduleId)) {
+					this.buildPluginResource(moduleInfo.moduleId, config);
 				}
 				else {
-					this.buildAmdModule(moduleId);
+					this.buildAmdModule(moduleInfo.moduleId);
 				}
-			});
+			}, this);
 		},
 
 		isPlugin: function isPlugin (moduleId) {
@@ -60,9 +59,11 @@
 		},
 
 		buildAmdModule: function buildAmdModule (resourceId) {
-			var source = this.fetcher(resourceId);
+			var url, source;
+			url = this.resolver.toUrl(resourceId);
+			source = this.fetcher(url);
 			this.writer(source);
-			}
+		}
 
 	};
 
