@@ -7,13 +7,16 @@ TMPDIR=$(mktemp -t cram -d)
 
 # optimization for jsrun.sh
 JSTMP=$(mktemp -t cram)
+export JSTMP
 
 USAGE="opt -r root_module_id -e path_to_js_engine -c config_file"
 
-COLLECTOR="$BINDIR/collector.sh"
+COLLECTOR="$BINDIR"/collector.sh
+BUILDER="$BINDIR"/builder.sh
 JSRUN="$BINDIR/jsrun.sh"
 
 # parse options
+
 for arg in "$@"
 do
 
@@ -49,19 +52,21 @@ done
 # all shell-driven js engines must have at least print() and load()
 # the following var holds name=bool pairs of other js engine
 # capabilities
+
 ENGINECAPS=$("$JSENGINE" "$JSDIR/jsEngineCaps.js")
 
-export JSENGINE ENGINECAPS BINDIR JSDIR CONFIG
+export JSENGINE JSRUN ENGINECAPS BINDIR JSDIR CONFIG
 
 MODULEINFO=$("$COLLECTOR" "$ROOTID")
 
 # some js engines can't fetch text resources (jsc)
 # so we have to prefetch them into a js module
+
 if [[ ! "$ENGINECAPS" =~ hasReadFile=true ]]; then
 
 	# create a temporary prefetch loader javascript module
 	FETCHER="$TMPDIR"/prefetcher.js
-echo "$TMPDIR"/prefetcher.js
+echo "prefetcher stub generated: $TMPDIR"/prefetcher.js
 
 	# append a copy of the base prefetchLoader module
 	cat "$JSDIR"/prefetcher.js > "$FETCHER"
@@ -86,3 +91,8 @@ else
 
 fi
 
+export FETCHER
+
+# we're ready to build!
+
+"$BUILDER" "$MODULEINFO"

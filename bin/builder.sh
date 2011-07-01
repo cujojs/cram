@@ -1,24 +1,40 @@
 # output builder
 # input: module ids
 # output: built js file
-# assumes $JSENGINE and $BINDIR are defined
+# assumes $JSDIR, $JSRUN, $FETCHER, $CONFIG are defined
 
-IDS=$1
+# list of modules to be built is sent as parameter info
 
-# declare actors, config
+MODULEINFO="$@"
 
-BUILDER="$BINDIR"../js/Builder.js
-FETCHER="$BINDIR"../js/fetcher.js
-WRITER="$BINDIR"../js/writer.js
-RESOLVER="$BINDIR"../js/Resolver.js
+# declare actors
 
-# create command
+BUILDER="$JSDIR"/Builder.js
+WRITER="$JSDIR"/writer.js
+RESOLVER="$JSDIR"/Resolver.js
+LOADER="$JSDIR"/SimpleAmdLoader.js
+
+# create javascript bootstrap code
 
 JS=<<EOT
 var builder = new Builder();
-builder.resolver = new Resolver('');
-print();
+builder.resolver = new Resolver('', $CONFIG);
+builder.loader = new Loader();
+builder.loader.resolver = builder.resolver;
+builder.fetcher = fetcher;
+builder.writer = writer.getWriter();
+builder.build($MODULEINFO, $CONFIG);
+print(writer.getOutput());
 EOT
 
+echo "bootstrap: $JS"
+
+JS=$(echo -n "$JS") # remove newlines
+
+echo "bootstrap: $JS"
+
 # execute it
-"$JSENGINE" "$BUILDER" "$FETCHER" "$WRITER" "$RESOLVER" "$JS"
+
+"$JSRUN" "$JS" "$BUILDER" "$LOADER" "$FETCHER" "$WRITER" "$RESOLVER"
+
+open -e "$JSTMP"
