@@ -12,14 +12,17 @@
 		//   toUrl(moduleId)
 		//   toAbdMid(moduleId, parentId)
 		resolver: null,
+
 		// loader is a module loader. parameters:
 		//   moduleId: the normalized module id
 		loader: null,
+
 		// fetcher is a function used to fetch a text resource. plugins
 		// 	 use this feature to get text content. It's also used to grab
 		//   the source code for modules. parameters:
 		//   resourceId: the normalized resource id
 		fetcher: null,
+
 		// writer is a function that a plugin may call to add code to the
 		//	 built javascript file. by default, a simple define() will be
 		//   added. parameters
@@ -52,7 +55,7 @@
 			module = this.loader(pluginParts.pluginId);
 			// execute build operation in plugin by giving it the writer, etc.
 			write = module.build(this.writer, this.fetcher, config);
-			// and calling it'the returned write method
+			// and calling its returned write method
 			write(pluginParts.resourceId, this.resolver);
 		},
 
