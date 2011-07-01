@@ -1,3 +1,4 @@
+#!/bin/bash
 # output builder
 # input: module ids
 # output: built js file

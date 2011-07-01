@@ -1,3 +1,4 @@
+#!/bin/bash
 # starts the optimizer
 
 BINDIR=`dirname $0`

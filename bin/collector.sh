@@ -1,3 +1,4 @@
+#!/bin/bash
 # dependency collector
 # input: module id, parent id
 # output: dependency module ids separated by commas
