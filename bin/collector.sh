@@ -24,6 +24,9 @@ MODURL=$("$RUNNER" "$JSCMD" "$RESOLVER")
 # Recursively print dependencies JSON
 function printDeps() {
 	local URL=$1
+	local SRC=$2
+	
+	RESULT=0
 	
 	# Only proceed if the file exists
 	if [[ -f "$URL" ]]; then
@@ -44,15 +47,21 @@ function printDeps() {
 			local LIST=$(echo $DEPS | sed -E 's/.*\"moduleUrl\"\:\"([^"]+)\".*/\1 /g')
 			for nextDep in $LIST
 			do
-				printDeps "$nextDep"
+				printDeps "$nextDep" "$URL"
+				RESULT=$(expr $RESULT + $?)
 			done
 			
 			# Current module
 			echo -n $DEPS
 		fi
 		
+	else
+		echo "ERROR: $SRC Dependency URL not found: $URL" >&2 # to stderr
+		RESULT=1
 	fi
+	
+	return $RESULT
 }
 
 printDeps "$MODURL"
-exit 1
+exit $?

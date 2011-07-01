@@ -62,7 +62,13 @@ export JSENGINE JSRUN ENGINECAPS BINDIR JSDIR CONFIG
 
 # HACK: Not great, but we end up with back-to-back arrays, so replace ][ with
 # a comma to form a single array
-MODULEINFO=$("$COLLECTOR" "$ROOTID" | sed 's/\]\[/,/g')
+MODULEINFO=$("$COLLECTOR" "$ROOTID")
+RV=$?
+if [ $RV -ne 0 ];then
+	exit $RV
+else
+	MODULEINFO=${MODULEINFO//][/,}
+fi
 
 # some js engines can't fetch text resources (jsc)
 # so we have to prefetch them into a js module
