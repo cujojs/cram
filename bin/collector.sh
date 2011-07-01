@@ -10,6 +10,7 @@ ESCAPER="$BINDIR"/jsescape.sh
 RESOLVER="$JSDIR"/Resolver.js
 PARSER="$JSDIR"/parser.js
 RUNNER="$BINDIR"/jsrun.sh
+COLLECTOR=$0
 if [[ ! "$ENGINECAPS" =~ hasJson=true  ]]; then
 	#rhino needs this, jsc does not
 	JSON="$JSDIR"/json2.js
@@ -19,9 +20,35 @@ fi
 
 JSCMD="var resolver = new Resolver(\"$2\", $CONFIG); print(resolver.toUrl(\"$1\"));"
 MODURL=$("$RUNNER" "$JSCMD" "$RESOLVER")
-MODSRC=$($ESCAPER < "$MODURL")
 
-# find dependencies in this module
+# Recursively print dependencies JSON
+function printDeps() {
+	local URL=$1
+	
+	# Only proceed if the file exists
+	if [[ -f "$URL" ]]; then
 
-JSCMD="var resolver = new Resolver(\"$1\", $CONFIG); print(JSON.stringify(parser.parse(\"$MODSRC\").map(function (dep) { return resolver.toModuleInfo(dep); })));"
-"$RUNNER" "$JSCMD" "$RESOLVER" "$PARSER" "$JSON"
+		# Get the source
+		local MODSRC=$("$ESCAPER" < "$URL")
+
+		# find dependencies in this module
+		local JSCMD="var resolver = new Resolver(\"$1\", $CONFIG); print(JSON.stringify(parser.parse(\"$MODSRC\").map(function (dep) { return resolver.toModuleInfo(dep); })));"
+		local JSON=$("$RUNNER" "$JSCMD" "$RESOLVER" "$PARSER" "$JSON")
+		
+		# If the JSON deps are non-empty, loop over them calling printDeps on each
+		if [[ "$JSON" != "[]" ]]; then
+			echo -n $JSON
+
+			# HACK: Extract moduleUrl from JSON
+			local LIST=`echo $JSON | sed -E 's/.*\"moduleUrl\"\:\"([^"]+)\".*/\1 /g'`
+			for nextDep in $LIST
+			do
+				printDeps "$nextDep"
+			done
+		fi
+		
+	fi
+}
+
+printDeps "$MODURL"
+exit 1
