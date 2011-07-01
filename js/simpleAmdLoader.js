@@ -6,9 +6,9 @@
 	// cache of loaded modules
 	cache = {};
 
-	function Loader () {}
+	function SimpleAmdLoader () {}
 
-	Loader.prototype = {
+	SimpleAmdLoader.prototype = {
 
 		resolver: null,
 
@@ -23,10 +23,9 @@
 
 	};
 
-	global.Loader = Loader;
+	global.Loader = SimpleAmdLoader;
 
 	// mock define
-	var modules;
 	if (!global.define) {
 		global.define = function () {
 			// TODO: allow commonjs and node.js module definition (e.g. exports.module)
