@@ -38,6 +38,8 @@ do
 		-c|--config)
 			shift
 			CONFIG=$(echo $(cat "$1")) #echo removes line feeds!
+			# FIXME: Need a better way to extract json params from config
+			DESTURL=$("$BINDIR/jsrun.sh" "var c=$CONFIG; print(c.destUrl);")
 			shift
 		;;
 
