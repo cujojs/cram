@@ -33,18 +33,22 @@ function printDeps() {
 
 		# find dependencies in this module
 		local JSCMD="var resolver = new Resolver(\"$1\", $CONFIG); print(JSON.stringify(parser.parse(\"$MODSRC\").map(function (dep) { return resolver.toModuleInfo(dep); })));"
-		local JSON=$("$RUNNER" "$JSCMD" "$RESOLVER" "$PARSER" "$JSON")
+		local DEPS=$("$RUNNER" "$JSCMD" "$RESOLVER" "$PARSER" "$JSON")
 		
 		# If the JSON deps are non-empty, loop over them calling printDeps on each
-		if [[ "$JSON" != "[]" ]]; then
-			echo -n $JSON
-
+		if [[ "$DEPS" != "[]" ]]; then
+			# Print dependencies first, then the current module
+			
+			# Dependencies
 			# HACK: Extract moduleUrl from JSON
-			local LIST=`echo $JSON | sed -E 's/.*\"moduleUrl\"\:\"([^"]+)\".*/\1 /g'`
+			local LIST=$(echo $DEPS | sed -E 's/.*\"moduleUrl\"\:\"([^"]+)\".*/\1 /g')
 			for nextDep in $LIST
 			do
 				printDeps "$nextDep"
 			done
+			
+			# Current module
+			echo -n $DEPS
 		fi
 		
 	fi
