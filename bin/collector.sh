@@ -26,7 +26,7 @@ function printDeps() {
 	local URL=$1
 	local SRC=$2
 	
-	RESULT=0
+	local RESULT=0
 	
 	# Only proceed if the file exists
 	if [[ -f "$URL" ]]; then
