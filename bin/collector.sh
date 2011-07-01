@@ -37,14 +37,18 @@ function printDeps() {
 		
 		# If the JSON deps are non-empty, loop over them calling printDeps on each
 		if [[ "$JSON" != "[]" ]]; then
-			echo -n $JSON
-
+			# Print dependencies first, then the current module
+			
+			# Dependencies
 			# HACK: Extract moduleUrl from JSON
-			local LIST=`echo $JSON | sed -E 's/.*\"moduleUrl\"\:\"([^"]+)\".*/\1 /g'`
+			local LIST=$(echo $JSON | sed -E 's/.*\"moduleUrl\"\:\"([^"]+)\".*/\1 /g')
 			for nextDep in $LIST
 			do
 				printDeps "$nextDep"
 			done
+			
+			# Current module
+			echo -n $JSON
 		fi
 		
 	fi
