@@ -82,7 +82,7 @@ echo "prefetcher stub generated: $TMPDIR"/prefetcher.js
 	do
 		# FIXME: removing newlines can instigate latent syntax errors
 		JSCODE=$(cat "$URL" | tr -d "\n" | "$BINDIR"/jsescape.sh)
-		echo "fetcher.store(\"$JSCODE\");" >> "$FETCHER"
+		echo "fetcher.store(\"$URL\", \"$JSCODE\");" >> "$FETCHER"
 	done
 	IFS=$ORIGIFS
 
