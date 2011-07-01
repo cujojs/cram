@@ -1,6 +1,6 @@
 // config and moduleInfo are defined in the calling code
 // as are Builder, Resolver, Loader, fetcher, writer
-function bootstrap (config, moduleInfo) {
+function build (config, moduleInfo) {
 
 	var builder = new Builder();
 	builder.resolver = new Resolver('', config);
