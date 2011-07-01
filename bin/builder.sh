@@ -13,28 +13,16 @@ BUILDER="$JSDIR"/Builder.js
 WRITER="$JSDIR"/writer.js
 RESOLVER="$JSDIR"/Resolver.js
 LOADER="$JSDIR"/SimpleAmdLoader.js
+BOOTSTRAP="$JSDIR"/buildBootstrap.js
 
-# create javascript bootstrap code
+# create javascript snippet
 
-JS=<<EOT
-var builder = new Builder();
-builder.resolver = new Resolver('', $CONFIG);
-builder.loader = new Loader();
-builder.loader.resolver = builder.resolver;
-builder.fetcher = fetcher;
-builder.writer = writer.getWriter();
-builder.build($MODULEINFO, $CONFIG);
-print(writer.getOutput());
-EOT
+JS="bootstrap($CONFIG, $MODULEINFO);"
 
-echo "bootstrap: $JS"
-
-JS=$(echo -n "$JS") # remove newlines
-
-echo "bootstrap: $JS"
+echo "build snippet: $JS"
 
 # execute it
 
-"$JSRUN" "$JS" "$BUILDER" "$LOADER" "$FETCHER" "$WRITER" "$RESOLVER"
+"$JSRUN" "$JS" "$BUILDER" "$LOADER" "$FETCHER" "$WRITER" "$RESOLVER" "$BOOTSTRAP"
 
 open -e "$JSTMP"
