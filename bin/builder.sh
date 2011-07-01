@@ -25,4 +25,3 @@ echo "build snippet: $JS"
 
 "$JSRUN" "$JS" "$BUILDER" "$LOADER" "$FETCHER" "$WRITER" "$RESOLVER" "$BOOTSTRAP"
 
-open -e "$JSTMP"
