@@ -4,7 +4,7 @@
 		return global.readFile(resourceUrl);
 	}
 
-	global.fetcher = fetcher = {
+	global.fetcher = {
 		fetch: fetch
 	};
 
