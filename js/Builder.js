@@ -58,11 +58,19 @@
 			write(pluginParts.resourceId, this.resolver);
 		},
 
-		buildAmdModule: function buildAmdModule (resourceId) {
+		buildAmdModule: function buildAmdModule (moduleId) {
 			var url, source;
-			url = this.resolver.toUrl(resourceId);
-			source = this.fetcher(url);
+			url = this.resolver.toUrl(moduleId);
+			source = this.insertModuleIdIntoDefine(moduleId, this.fetcher(url));
 			this.writer(source);
+		},
+
+		insertModuleIdIntoDefine: function (moduleId, source) {
+			// TODO: we need a better way to find the right define()
+			// if the use has a define("string resource"); this will fail.
+			return source.replace(/(define\s*\()([^"']{1})/, function (match, define, char) {
+				return define + '"' + moduleId + '", ' + char;
+			});
 		}
 
 	};
