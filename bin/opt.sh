@@ -57,25 +57,32 @@ MODULEINFO=$("$COLLECTOR" "$ROOTID")
 
 # some js engines can't fetch text resources (jsc)
 # so we have to prefetch them into a js module
-# note: some future plugins may force us to change this algorithm
 if [[ ! "$ENGINECAPS" =~ hasReadFile=true ]]; then
+
 	# create a temporary prefetch loader javascript module
 	FETCHER="$TMPDIR"/prefetcher.js
+echo "$TMPDIR"/prefetcher.js
+
 	# append a copy of the base prefetchLoader module
 	cat "$JSDIR"/prefetcher.js > "$FETCHER"
+
 	# prefetch all modules and resources as function calls into prefetch loader
-	local URLS=$("$JSRUN" "print(fetcher.extractUrls($MODULEINFO));" "$FETCHER")
+	URLS=$("$JSRUN" "print(fetcher.extractUrls($MODULEINFO));" "$FETCHER")
+
 	# for each module/resource: fetcher.store("text data");
 	ORIGIFS=$IFS
 	IFS=","
 	for URL in $URLS
 	do
-		echo "fetcher.store(\""
-		cat "$URL" | "$BINDIR"/jsescape.sh >> "$FETCHER"
-		echo "\");"
+		# FIXME: removing newlines can instigate latent syntax errors
+		JSCODE=$(cat "$URL" | tr -d "\n" | "$BINDIR"/jsescape.sh)
+		echo "fetcher.store(\"$JSCODE\");" >> "$FETCHER"
 	done
 	IFS=$ORIGIFS
+
 else
-	FETCHER="$JSDIR"/readFilefetcher.js
+
+	FETCHER="$JSDIR"/readFileFetcher.js
+
 fi
 
