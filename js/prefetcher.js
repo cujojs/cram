@@ -24,7 +24,7 @@
 		var urls = [];
 		moduleInfo.forEach(function (info) {
 			if (info.pluginData) {
-				urls.push(info.pluginData.pluginId);
+				urls.push(info.pluginData.pluginUrl);
 				urls.push(info.moduleUrl);
 			}
 			else {
