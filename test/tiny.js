@@ -1,3 +1,3 @@
-define(['li/view/SlugList', 'b!foo!bar', 'c'], function (a, b, c) {
+define(['js/depA'], function (a, b, c) {
 	// does it work?
 });
