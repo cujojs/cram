@@ -1,3 +1,3 @@
-define(['js/depA'], function (a, b, c) {
+define(['js/depA', 'js/moduleWithPluginDeps'], function (a, b, c, m) {
 	// does it work?
 });

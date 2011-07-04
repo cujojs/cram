@@ -21,17 +21,9 @@
 	// extracts all url info from a list of module info returned
 	// by the Resolver
 	function extractUrls (moduleInfo) {
-		var urls = [];
-		moduleInfo.forEach(function (info) {
-			if (info.pluginData) {
-				urls.push(info.pluginData.pluginUrl);
-				urls.push(info.moduleUrl);
-			}
-			else {
-				urls.push(info.moduleUrl);
-			}
+		return moduleInfo.map(function (info) {
+			return info.url;
 		});
-		return urls;
 	}
 
 	global.fetcher = fetcher = {

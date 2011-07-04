@@ -42,7 +42,7 @@
 				if (pluginParts.pluginId.indexOf('/') < 0) {
 					pluginParts.pluginId = joinPath(this.pluginPath, pluginParts.pluginId);
 				}
-				pluginParts.pluginUrl = resolveUrl(resolvePath(pluginParts.pluginId, this.paths, this.pathSearchRx), this.baseUrl);
+				pluginParts.pluginUrl = this.toUrl(pluginParts.pluginId);
 			}
 			else {
 				absId = this.toAbsMid(id);
@@ -50,7 +50,7 @@
 			return {
 				parentId: this.parentId,
 				moduleId: absId,
-				moduleUrl: resolveUrl(resolvePath(absId, this.paths, this.pathSearchRx), this.baseUrl),
+				moduleUrl: this.toUrl(absId),
 				pluginData: pluginParts
 			};
 		}

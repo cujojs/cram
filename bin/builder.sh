@@ -14,15 +14,13 @@ BUILDER="$JSDIR"/Builder.js
 WRITER="$JSDIR"/writer.js
 RESOLVER="$JSDIR"/Resolver.js
 LOADER="$JSDIR"/SimpleAmdLoader.js
-BOOTSTRAP="$JSDIR"/build.js
+BUILD="$JSDIR"/build.js
 
 # create javascript snippet
 
 JS="build($CONFIG, $MODULEINFO);"
 
-echo "build snippet: $JS"
-
 # execute it
 
-"$JSRUN" "$JS" "$BUILDER" "$LOADER" "$FETCHER" "$WRITER" "$RESOLVER" "$BOOTSTRAP"
+"$JSRUN" "$JS" "$BUILDER" "$LOADER" "$FETCHER" "$WRITER" "$RESOLVER" "$BUILD"
 

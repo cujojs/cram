@@ -1,8 +1,10 @@
 {
 
 	"baseUrl": "",
+	"destFile": "test/output/built.js",
 	"paths": {
 		"js": "test"
-	}
+	},
+	"pluginPath": "../curl/src/curl/plugin"
 
 }

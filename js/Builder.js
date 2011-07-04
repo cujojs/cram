@@ -1,6 +1,8 @@
 (function (global) {
 "use strict";
 
+	var insertModuleIdRx = /(define\s*\()([^"']{1})/;
+
 	// constructor
 	function Builder () {}
 
@@ -29,47 +31,84 @@
 		//   text: a string of text to output to the built file
 		writer: null,
 
+		// processed is a hashMap of the ids of the modules that were output
+		// to the built file already. if this is set to a non-empty map at
+		// the start of a build, it effectively becomes an "excludes list".
+		processed: {},
+
 		build: function build (moduleList, config) {
+
 			// moduleList is an array of module info objects:
 			moduleList.forEach(function (moduleInfo) {
+
 				// is this a plugin-based module/resource?
-				if (this.isPlugin(moduleInfo.moduleId)) {
-					this.buildPluginResource(moduleInfo.moduleId, config);
+				if (this.isPlugin(moduleInfo.id)) {
+					this.buildPluginResource(moduleInfo.id, config);
 				}
 				else {
-					this.buildAmdModule(moduleInfo.moduleId);
+					this.buildAmdModule(moduleInfo.id);
 				}
+
 			}, this);
+
 		},
 
 		isPlugin: function isPlugin (moduleId) {
 			return moduleId.indexOf('!') >= 0;
 		},
 
+		isAlreadyProcessed: function isAlreadyProcessed (moduleId) {
+			return !!this.processed[moduleId];
+		},
+
 		buildPluginResource: function buildPluginResource (resourceId, config) {
 			var pluginParts, module, write;
+
+			if (this.isAlreadyProcessed(resourceId)) return;
+
 			// interpret the resourceId
 			pluginParts = extractPluginIdParts(resourceId);
+
 			// load plugin module
 			module = this.loader(pluginParts.pluginId);
-			// execute build operation in plugin by giving it the writer, etc.
-			write = module.build(this.writer, this.fetcher, config);
-			// and calling its returned write method
-			write(pluginParts.resourceId, this.resolver);
+
+			// write output
+			if (typeof module.build == 'function') {
+
+				// execute plugin's build operation by giving it the writer, etc
+				write = module.build(this.writer, this.fetcher, config);
+
+				// and calling its returned write method
+				write(pluginParts.resourceId, this.resolver);
+
+			}
+			else {
+
+				// this is a simple plugin that behaves the same in a build
+				// as out (e.g. it probably gets its resources via xhr or has
+				// nothing to load) so just write-out a call to load the
+				// resource using the plugin just like outside a build
+				this.buildAmdModule(resourceId);
+
+			}
 		},
 
 		buildAmdModule: function buildAmdModule (moduleId) {
 			var url, source;
+
+			if (this.isAlreadyProcessed(moduleId)) return;
+
 			url = this.resolver.toUrl(moduleId);
-			source = this.insertModuleIdIntoDefine(moduleId, this.fetcher(url));
+			source = this.insertModuleId(moduleId, this.fetcher(url));
 			this.writer(source);
+
 		},
 
-		insertModuleIdIntoDefine: function (moduleId, source) {
+		insertModuleId: function insertModuleId (moduleId, source) {
 			// TODO: we need a better way to find the right define()
 			// if the use has a define("string resource"); this will fail.
-			return source.replace(/(define\s*\()([^"']{1})/, function (match, define, char) {
-				return define + '"' + moduleId + '", ' + char;
+			return source.replace(insertModuleIdRx, function (m, prefix, suffix) {
+				return prefix + '"' + moduleId + '", ' + suffix;
 			});
 		}
 
