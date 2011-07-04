@@ -56,13 +56,20 @@ done
 
 ENGINECAPS=$("$JSENGINE" "$JSDIR/jsEngineCaps.js")
 
-export JSENGINE JSRUN ENGINECAPS BINDIR JSDIR CONFIG
+echo "js engine capabilites = $ENGINECAPS"
+
+if [[ ! "$ENGINECAPS" =~ hasJson=true  ]]; then
+	#rhino needs this, jsc does not
+	JSON="$JSDIR"/json2.js
+fi
+
+export JSENGINE JSRUN ENGINECAPS JSON BINDIR JSDIR CONFIG
 
 # HACK: Not great, but we end up with back-to-back arrays, so replace ][ with
 # a comma to form a single array
 MODULEINFO=$("$COLLECTOR" "$ROOTID" | sed 's/\]\[/,/g')
 
-echo "moduleinfo = " "$MODULEINFO"
+echo "moduleinfo =" "$MODULEINFO"
 
 # some js engines can't fetch text resources (jsc)
 # so we have to prefetch them into a js module
@@ -98,12 +105,6 @@ fi
 
 export FETCHER
 
-# pull out config options
-
-OUTPUT=$(echo "$CONFIG" | "$BINDIR"/getjsonstring.sh "destFile")
-
-echo "output = $OUTPUT"
-
 # we're ready to build!
 
-"$BUILDER" "$MODULEINFO" > "$OUTPUT"
+"$BUILDER" "$MODULEINFO"

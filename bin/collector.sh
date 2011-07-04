@@ -16,11 +16,6 @@ LOADER="$JSDIR"/SimpleAmdLoader.js
 ANALYZE="$JSDIR"/analyze.js
 
 COLLECTOR=$0
-if [[ ! "$ENGINECAPS" =~ hasJson=true  ]]; then
-	#rhino needs this, jsc does not
-	JSON="$JSDIR"/json2.js
-fi
-
 # resolve module id to url
 
 JSCMD="var resolver = new Resolver(\"$2\", $CONFIG); print(resolver.toUrl(\"$1\"));"
@@ -28,8 +23,9 @@ MODURL=$("$RUNNER" "$JSCMD" "$RESOLVER")
 
 # Recursively print dependencies JSON
 function printDeps () {
-	local URL=$1
-	local PARENTID=$2
+	local MODID=$1
+	local URL=$2
+	local PARENTID=$3
 
 	# Only proceed if the file exists
 	if [[ -f "$URL" ]]; then
@@ -37,33 +33,40 @@ function printDeps () {
 		# Get the source
 		local MODSRC=$("$ESCAPER" < "$URL")
 
+		# TODO: grab urls while gabbing ids rather than in the loop below
 		# find dependencies in this module
-#		local JSCMD="var resolver = new Resolver(\"$1\", $CONFIG), analyzer = new Analyzer(); print(JSON.stringify(analyzer.parse(\"$MODSRC\").map(function (dep) { return resolver.toModuleInfo(dep); })));"
-		local JSCMD="print(JSON.stringify(analyze(\"$MODSRC\", \"$PARENTID\", $CONFIG)));"
-		local DEPS=$("$RUNNER" "$JSCMD" "$LOADER" "$RESOLVER" "$ANALYZER" "$JSON" "$ANALYZE")
-#echo "list = $DEPS"
+		#local JSCMD="print(JSON.stringify(analyze(\"$MODSRC\", \"$PARENTID\", $CONFIG).map(function (def) { return def.id + '||' + def.url; })));"
+		#local DEPS=$("$RUNNER" "$JSCMD" "$LOADER" "$RESOLVER" "$ANALYZER" "$JSON" "$ANALYZE")
+		# format into a newline-delimited list (bash-friendly)
+		local JSCMD="print(analyze(\"$MODSRC\", \"$PARENTID\", $CONFIG).join('\n'));"
+		local DEPS=$("$RUNNER" "$JSCMD" "$LOADER" "$RESOLVER" "$ANALYZER" "$ANALYZE")
+#echo "deps for $MODID = $DEPS"
 
 		# If the JSON deps are non-empty, loop over them calling printDeps on each
-		if [[ "$DEPS" != "[]" ]]; then
+		#if [[ "$DEPS" != "[]" ]]; then
+		if [[ "$DEPS" != "" ]]; then
 			# Print dependencies first, then the current module
 			
 			# Dependencies
-			# TODO: get the extractor working for multiple properties (getjsonstring.sh)
-			#local LIST=$("$EXTRACTOR" -f 'g' "$DEPS")
 			# HACK: Extract moduleUrl from JSON
 			#local LIST=$(echo $DEPS | sed -E 's/.*"url"[^:]*\:[^"]*"([^"]+)".*/\1 /g')
-			local LIST=$(echo $DEPS | sed -E 's/.*\"url\"\:\"([^"]+)\".*/\1 /g')
-			for nextDep in $LIST
+			#local LIST=$(echo $DEPS | sed -E 's/.*\"url\"\:\"([^"]+)\".*/\1 /g')
+			#local LIST=$(echo $DEPS | sed -E 's/(\[\s*)?\"([^"]+)\"(\s*(,|\])+)/\2 /g')
+			#for nextDep in $LIST
+			for nextDep in $DEPS
 			do
-				printDeps "$nextDep" "$PARENTID"
+				JSCMD="var resolver = new Resolver(\"$PARENTID\", $CONFIG); print(resolver.toUrl(\"$nextDep\"));"
+				local CHILDURL=$("$RUNNER" "$JSCMD" "$RESOLVER")
+				printDeps "$nextDep" "$CHILDURL" "$MODID"
 			done
 			
-			# Current module
-			echo -n $DEPS
+			# Current module, quoted and comma-delimited
+			echo -n '"'$(echo "$DEPS" | sed -n -e '1h;1!H;${;g;s/\n/","/g;p;}')'",'
+			#echo -n $DEPS
 		fi
 		
 	fi
 }
 
-printDeps "$MODURL" "$2"
+printDeps "$1" "$MODURL" "$2"
 exit 1

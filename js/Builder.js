@@ -39,14 +39,14 @@
 		build: function build (moduleList, config) {
 			
 			// moduleList is an array of module info objects:
-			moduleList.forEach(function (moduleInfo) {
+			moduleList.forEach(function (moduleId) {
 
 				// is this a plugin-based module/resource?
-				if (this.resolver.isPluginResource(moduleInfo.id)) {
-					this.buildPluginResource(moduleInfo.id, config);
+				if (this.resolver.isPluginResource(moduleId)) {
+					this.buildPluginResource(moduleId, config);
 				}
 				else {
-					this.buildAmdModule(moduleInfo.id);
+					this.buildAmdModule(moduleId);
 				}
 
 			}, this);

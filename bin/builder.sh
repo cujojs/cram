@@ -6,8 +6,6 @@
 
 # list of modules to be built is sent as parameter info
 
-MODULEINFO="$@"
-
 # declare actors
 
 BUILDER="$JSDIR"/Builder.js
@@ -18,9 +16,16 @@ BUILD="$JSDIR"/build.js
 
 # create javascript snippet
 
-JS="build($CONFIG, $MODULEINFO);"
+MODULEARRAY='['$@']'
+
+JS="build($CONFIG, $MODULEARRAY);"
+
+echo "build snippet = $JS"
+
+# pull out config options
+
+OUTPUT=$(echo "$CONFIG" | "$BINDIR"/getjsonstring.sh "destFile")
 
 # execute it
 
-"$JSRUN" "$JS" "$BUILDER" "$LOADER" "$FETCHER" "$WRITER" "$RESOLVER" "$BUILD"
-
+"$JSRUN" "$JS" "$BUILDER" "$LOADER" "$FETCHER" "$WRITER" "$RESOLVER" "$BUILD" > "$OUTPUT"
