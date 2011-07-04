@@ -49,7 +49,7 @@
 					self.scan(depsList, cleanDepsRx, function (match, depId) {
 
 						if (self.resolver.isPluginResource(depId)) {
-							deps.concat(self.analyzePluginResource(depId));
+							deps.push.apply(deps, self.analyzePluginResource(depId));
 						}
 						else {
 							// just a module
