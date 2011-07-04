@@ -48,19 +48,12 @@
 
 		toAbsPluginResourceId: function toAbsPluginResourceId (id) {
 			var absId, pluginParts;
-			if (this.isPluginResource(id)) {
-				pluginParts = extractPluginIdParts(id);
-				absId = this.toAbsMid(pluginParts.pluginId);
-				if (absId.indexOf('/') < 0 && 'pluginPath' in this) {
-					absId = joinPath(this.pluginPath, absId);
-				}
-				absId += '!' + (pluginParts.resource || '');
+			pluginParts = extractPluginIdParts(id);
+			absId = this.toAbsMid(pluginParts.pluginId);
+			if (absId.indexOf('/') < 0 && 'pluginPath' in this) {
+				absId = joinPath(this.pluginPath, absId);
 			}
-			else {
-				// TODO: should we throw here instead?
-				absId = this.toAbsMid(id);
-			}
-			return absId;
+			return absId + '!' + (pluginParts.resource || '');
 		},
 
 		parsePluginResourceId: function (id) {

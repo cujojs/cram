@@ -78,13 +78,14 @@ if [[ ! "$ENGINECAPS" =~ hasReadFile=true ]]; then
 
 	# create a temporary prefetch loader javascript module
 	FETCHER="$TMPDIR"/prefetcher.js
-echo "prefetcher stub generated: $TMPDIR"/prefetcher.js
+	RESOLVER="$JSDIR"/Resolver.js
+echo "prefetcher stub generated: $FETCHER"
 
 	# append a copy of the base prefetchLoader module
 	cat "$JSDIR"/prefetcher.js > "$FETCHER"
 
 	# prefetch all modules and resources as function calls into prefetch loader
-	URLS=$("$JSRUN" "print(fetcher.extractUrls($MODULEINFO));" "$FETCHER")
+	URLS=$("$JSRUN" "var resolver = new Resolver('', $CONFIG); print(fetcher.extractUrls([$MODULEINFO], resolver));" "$FETCHER" "$RESOLVER")
 
 	# for each module/resource: fetcher.store("text data");
 	ORIGIFS=$IFS

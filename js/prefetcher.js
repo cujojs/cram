@@ -20,9 +20,9 @@
 
 	// extracts all url info from a list of module info returned
 	// by the Resolver
-	function extractUrls (moduleInfo) {
-		return moduleInfo.map(function (info) {
-			return info.url;
+	function extractUrls (moduleInfo, resolver) {
+		return moduleInfo.map(function (id) {
+			return resolver.toUrl(id);
 		}).join(',');
 	}
 
