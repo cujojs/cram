@@ -41,15 +41,18 @@ function printDeps () {
 #		local JSCMD="var resolver = new Resolver(\"$1\", $CONFIG), analyzer = new Analyzer(); print(JSON.stringify(analyzer.parse(\"$MODSRC\").map(function (dep) { return resolver.toModuleInfo(dep); })));"
 		local JSCMD="print(JSON.stringify(analyze(\"$MODSRC\", \"$PARENTID\", $CONFIG)));"
 		local DEPS=$("$RUNNER" "$JSCMD" "$LOADER" "$RESOLVER" "$ANALYZER" "$JSON" "$ANALYZE")
+#echo "list = $DEPS"
 
 		# If the JSON deps are non-empty, loop over them calling printDeps on each
 		if [[ "$DEPS" != "[]" ]]; then
 			# Print dependencies first, then the current module
 			
 			# Dependencies
+			# TODO: get the extractor working for multiple properties (getjsonstring.sh)
 			#local LIST=$("$EXTRACTOR" -f 'g' "$DEPS")
 			# HACK: Extract moduleUrl from JSON
-			local LIST=$(echo $DEPS | sed -E 's/.*"url"[^:]*\:[^"]*"([^"]+)".*/\1 /g')
+			#local LIST=$(echo $DEPS | sed -E 's/.*"url"[^:]*\:[^"]*"([^"]+)".*/\1 /g')
+			local LIST=$(echo $DEPS | sed -E 's/.*\"url\"\:\"([^"]+)\".*/\1 /g')
 			for nextDep in $LIST
 			do
 				printDeps "$nextDep" "$PARENTID"

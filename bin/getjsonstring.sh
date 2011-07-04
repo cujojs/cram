@@ -6,7 +6,7 @@ sed -E 's/.*"'$1'"[^:]*\:[^"]*"([^"]+)".*/\1/'
 # $1 = name of property
 # -f 'g' = regex options, such as "g"
 
-#if [[ '-f' -eq $1 ]]; then
+#if [[ '-f' == $1 ]]; then
 #	OPTIONS=$2
 #	shift;
 #	shift;
