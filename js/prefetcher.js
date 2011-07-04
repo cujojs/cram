@@ -23,7 +23,7 @@
 	function extractUrls (moduleInfo) {
 		return moduleInfo.map(function (info) {
 			return info.url;
-		});
+		}).join(',');
 	}
 
 	global.fetcher = fetcher = {
