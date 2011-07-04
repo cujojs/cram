@@ -46,7 +46,10 @@
 	global.writer = writer = {
 		getWriter: getWriter,
 		getOutput: getOutput,
-		clearOutput: clearOutput
+		clearOutput: clearOutput,
+		toString: function toString () {
+			return '[object writer]';
+		}
 	};
 
 }(this));

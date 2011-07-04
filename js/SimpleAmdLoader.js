@@ -19,6 +19,10 @@
 				currentlyLoadingModuleId = null;
 			}
 			return cache[id];
+		},
+
+		toString: function toString () {
+			return '[object SimpleAmdLoader]';
 		}
 
 	};

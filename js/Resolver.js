@@ -26,6 +26,8 @@
 
 	Resolver.prototype = {
 
+		/* these methods conform to the CommonJS AMD proposal */
+
 		toUrl: function toUrl (id) {
 			return resolveUrl(this.toAbsMid(id, this.parentId), this.baseUrl);
 		},
@@ -34,43 +36,54 @@
 			return resolvePath(normalizeName(id, this.parentId), this.paths, this.pathSearchRx);
 		},
 
-		toModuleInfo: function (id) {
+		/* these methods are proprietary to cram/curl.js */
+
+		toUrlFromAbsMid: function toUrlFromAbsMid (absId) {
+			return resolveUrl(absId, this.baseUrl);
+		},
+
+		isPluginResource: function isPluginResource (id) {
+			return isPlugin(id);
+		},
+
+		toAbsPluginResourceId: function toAbsPluginResourceId (id) {
 			var absId, pluginParts;
-			if (isPlugin(id)) {
+			if (this.isPluginResource(id)) {
 				pluginParts = extractPluginIdParts(id);
-				absId = this.toAbsMid(pluginParts.resourceId);
-				if (pluginParts.pluginId.indexOf('/') < 0) {
-					pluginParts.pluginId = joinPath(this.pluginPath, pluginParts.pluginId);
+				absId = this.toAbsMid(pluginParts.pluginId);
+				if (absId.indexOf('/') < 0 && 'pluginPath' in this) {
+					absId = joinPath(this.pluginPath, absId);
 				}
-				pluginParts.pluginUrl = this.toUrl(pluginParts.pluginId);
+				absId += '!' + (pluginParts.resource || '');
 			}
 			else {
+				// TODO: should we throw here instead?
 				absId = this.toAbsMid(id);
 			}
-			return {
-				parentId: this.parentId,
-				moduleId: absId,
-				moduleUrl: this.toUrl(absId),
-				pluginData: pluginParts
-			};
+			return absId;
+		},
+
+		parsePluginResourceId: function (id) {
+			return extractPluginIdParts(id);
+		},
+
+		toString: function toString () {
+			return '[object Resolver]';
 		}
 
 	};
-
-	/* the following were copied from Builder.js */
 
 	function isPlugin (moduleId) {
 		return moduleId.indexOf('!') >= 0;
 	}
 
 	function extractPluginIdParts (resourceId) {
+		// Note: some plugins don't require a resource. e.g. "domReady!"
 		var parts;
-		parts = resourceId.split('!');
+		parts = resourceId.split('!', 2);
 		return {
-			all: parts,
 			pluginId: parts[0],
-			resourceId: parts[1],
-			suffixes: parts.slice(2)
+			resource: parts[1]
 		};
 	}
 

@@ -25,13 +25,10 @@
 
 		/* the following properties must be injected before calling parse() */
 
-		// resolver is a module id and or url resolver. it has two methods:
-		//   toUrl(moduleId)
-		//   toAbsMid(moduleId, parentId)
+		// resolver is a module id and/or url resolver.
 		resolver: null,
 
-		// loader is a module loader function. parameters:
-		//   moduleId: the normalized module id
+		// loader is an AMD module loader object.
 		loader: null,
 
 		parse: function parse (source, config) {
@@ -51,8 +48,8 @@
 					// extract the ids
 					self.scan(depsList, cleanDepsRx, function (match, depId) {
 
-						if (self.isPlugin(depId)) {
-							// push plugin module and ask for any special deps
+						if (self.resolver.isPluginResource(depId)) {
+							deps.concat(self.analyzePluginResource(depId));
 						}
 						else {
 							// just a module
@@ -73,44 +70,43 @@
 			str.replace(rx, lambda);
 		},
 
-		isPlugin: function isPlugin (moduleId) {
-			return moduleId.indexOf('!') >= 0;
-		},
-
 		analyzePluginResource: function (depId) {
-			var pluginParts, module, deps;
+			var resolver, pluginParts, module, url, deps;
 
-			pluginParts = extractPluginIdParts(depId);
+			resolver = this.resolver;
+
+			// resolve to absolute path
+			depId = resolver.toAbsPluginResourceId(depId);
+			// get parts
+			pluginParts = resolver.parsePluginResourceId(depId);
+
 			deps = [pluginParts.pluginId];
 
 			// get plugin module
-			module = this.loader(pluginParts.pluginId);
+			url = resolver.toUrl(pluginParts.pluginId);
+			module = this.loader.load(url);
 
 			// ask plugin to look for more dependencies
 			if (typeof module.analyze == 'function') {
 				module.analyze(depId, this.loader.load, function (resourceId) {
-					deps.push(resourceId);
+					// TODO: is it the plugin's job or the builder's job to
+					// resolve the abs module id of these dependencies?
+					// during the build phase, we hand a resolver to the plugin
+					// module. should we do that here? or should we use the
+					// following code?
+					var absId = resolver.toAbsMid(resourceId);
+					deps.push(absId);
 				});
 			}
 
 			return deps;
+		},
+
+		toString: function toString () {
+			return '[object Analyzer]';
 		}
 
 	};
-
-	/* this function was copied from Builder.js */
-
-	function extractPluginIdParts (resourceId) {
-		var parts;
-		parts = resourceId.split('!');
-		return {
-			all: parts,
-			pluginId: parts[0],
-			resourceId: parts[1],
-			suffixes: parts.slice(2)
-		};
-	}
-
 
 	global.Analyzer = Analyzer;
 

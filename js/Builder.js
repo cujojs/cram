@@ -15,7 +15,7 @@
 		//   toAbsMid(moduleId, parentId)
 		resolver: null,
 
-		// loader is a module loader function. parameters:
+		// loader is a module loader object with a load function. parameters:
 		//   moduleId: the normalized module id
 		loader: null,
 
@@ -37,12 +37,12 @@
 		processed: {},
 
 		build: function build (moduleList, config) {
-
+			
 			// moduleList is an array of module info objects:
 			moduleList.forEach(function (moduleInfo) {
 
 				// is this a plugin-based module/resource?
-				if (this.isPlugin(moduleInfo.id)) {
+				if (this.resolver.isPluginResource(moduleInfo.id)) {
 					this.buildPluginResource(moduleInfo.id, config);
 				}
 				else {
@@ -53,24 +53,25 @@
 
 		},
 
-		isPlugin: function isPlugin (moduleId) {
-			return moduleId.indexOf('!') >= 0;
-		},
-
 		isAlreadyProcessed: function isAlreadyProcessed (moduleId) {
 			return !!this.processed[moduleId];
 		},
 
-		buildPluginResource: function buildPluginResource (resourceId, config) {
-			var pluginParts, module, write;
+		buildPluginResource: function buildPluginResource (depId, config) {
+			var resolver, pluginParts, url, module, write;
 
-			if (this.isAlreadyProcessed(resourceId)) return;
+			resolver = this.resolver;
 
-			// interpret the resourceId
-			pluginParts = extractPluginIdParts(resourceId);
+			// resolve to absolute path
+			depId = resolver.toAbsPluginResourceId(depId);
+			// get parts
+			pluginParts = resolver.parsePluginResourceId(depId);
 
-			// load plugin module
-			module = this.loader(pluginParts.pluginId);
+			if (this.isAlreadyProcessed(depId)) return;
+
+			// get plugin module
+			url = resolver.toUrl(pluginParts.pluginId);
+			module = this.loader.load(pluginParts.pluginId);
 
 			// write output
 			if (typeof module.build == 'function') {
@@ -79,7 +80,7 @@
 				write = module.build(this.writer, this.fetcher, config);
 
 				// and calling its returned write method
-				write(pluginParts.resourceId, this.resolver);
+				write(pluginParts.resourceId, resolver);
 
 			}
 			else {
@@ -88,7 +89,7 @@
 				// as out (e.g. it probably gets its resources via xhr or has
 				// nothing to load) so just write-out a call to load the
 				// resource using the plugin just like outside a build
-				this.buildAmdModule(resourceId);
+				this.buildAmdModule(depId);
 
 			}
 		},
@@ -106,24 +107,17 @@
 
 		insertModuleId: function insertModuleId (moduleId, source) {
 			// TODO: we need a better way to find the right define()
-			// if the use has a define("string resource"); this will fail.
+			// if the user has a define("string resource"); will this fail?
 			return source.replace(insertModuleIdRx, function (m, prefix, suffix) {
 				return prefix + '"' + moduleId + '", ' + suffix;
 			});
+		},
+
+		toString: function toString () {
+			return '[object Builder]';
 		}
 
 	};
-
-	function extractPluginIdParts (resourceId) {
-		var parts;
-		parts = resourceId.split('!');
-		return {
-			all: parts,
-			pluginId: parts[0],
-			resourceId: parts[1],
-			suffixes: parts.slice(2)
-		};
-	}
 
 	global.Builder = Builder;
 

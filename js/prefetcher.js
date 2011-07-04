@@ -29,7 +29,10 @@
 	global.fetcher = fetcher = {
 		fetch: fetch,
 		store: store,
-		extractUrls: extractUrls
+		extractUrls: extractUrls,
+		toString: function toString () {
+			return '[object prefetcher]';
+		}
 	};
 
 }(this));

@@ -5,7 +5,10 @@
 	}
 
 	global.fetcher = {
-		fetch: fetch
+		fetch: fetch,
+		toString: function toString () {
+			return '[object readFileFetcher]';
+		}
 	};
 
 }(this));

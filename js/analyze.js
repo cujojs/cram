@@ -11,16 +11,16 @@ function analyze (moduleSource, parentId, config) {
 
 	analyzer.parse(moduleSource).forEach(function (dep) {
 
-		var info = resolver.toModuleInfo(dep);
-		if (info.pluginData) {
-			moduleIds.push({
-				id: pluginData.pluginId,
-				url: pluginData.pluginUrl
-			});
+		var absId;
+		if (resolver.isPluginResource(dep)) {
+			absId = resolver.toAbsPluginResourceId(dep);
+		}
+		else {
+			absId = resolver.toAbsMid(dep);
 		}
 		moduleIds.push({
-			id: info.moduleId,
-			url: info.moduleUrl
+			id: absId,
+			url: resolver.toUrlFromAbsMid(absId)
 		});
 	});
 
