@@ -62,6 +62,8 @@ export JSENGINE JSRUN ENGINECAPS BINDIR JSDIR CONFIG
 # a comma to form a single array
 MODULEINFO=$("$COLLECTOR" "$ROOTID" | sed 's/\]\[/,/g')
 
+echo "moduleinfo = " "$MODULEINFO"
+
 # some js engines can't fetch text resources (jsc)
 # so we have to prefetch them into a js module
 
@@ -96,6 +98,12 @@ fi
 
 export FETCHER
 
+# pull out config options
+
+OUTPUT=$(echo "$CONFIG" | "$BINDIR"/getjsonstring.sh "destFile")
+
+echo "output = $OUTPUT"
+
 # we're ready to build!
 
-"$BUILDER" "$MODULEINFO"
+"$BUILDER" "$MODULEINFO" > "$OUTPUT"
