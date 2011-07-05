@@ -80,7 +80,7 @@
 			// get parts
 			pluginParts = resolver.parsePluginResourceId(depId);
 
-			deps = [pluginParts.pluginId];
+			deps = [depId];
 
 			// get plugin module
 			url = resolver.toUrl(pluginParts.pluginId);
@@ -90,7 +90,7 @@
 			if (typeof module.analyze == 'function') {
 				module.analyze(depId, this.loader.load, function (resourceId) {
 					// TODO: is it the plugin's job or the builder's job to
-					// resolve the abs module id of these dependencies?
+					// resolve the absolute module id of these dependencies?
 					// during the build phase, we hand a resolver to the plugin
 					// module. should we do that here? or should we use the
 					// following code?

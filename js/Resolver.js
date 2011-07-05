@@ -29,11 +29,11 @@
 		/* these methods conform to the CommonJS AMD proposal */
 
 		toUrl: function toUrl (id) {
-			return resolveUrl(this.toAbsMid(id, this.parentId), this.baseUrl);
+			return resolveUrl(resolvePath(this.toAbsMid(id, this.parentId), this.paths, this.pathSearchRx), this.baseUrl);
 		},
 
 		toAbsMid: function toAbsMid (id) {
-			return resolvePath(normalizeName(id, this.parentId), this.paths, this.pathSearchRx);
+			return normalizeName(id, this.parentId);
 		},
 
 		/* these methods are proprietary to cram/curl.js */

@@ -1,3 +1,3 @@
 define(['js/moduleWithPluginDeps', 'js/depA'], function (m, a) {
-	// does it work?
+	console.log('tiny is loaded');
 });

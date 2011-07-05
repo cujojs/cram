@@ -15,7 +15,6 @@ RUNNER="$BINDIR"/jsrun.sh
 LOADER="$JSDIR"/SimpleAmdLoader.js
 ANALYZE="$JSDIR"/analyze.js
 
-COLLECTOR=$0
 # resolve module id to url
 
 JSCMD="var resolver = new Resolver(\"$2\", $CONFIG); print(resolver.toUrl(\"$1\"));"
@@ -69,4 +68,6 @@ function printDeps () {
 }
 
 printDeps "$1" "$MODURL" "$2"
-exit 1
+
+# include root module id
+echo "\"$1\""

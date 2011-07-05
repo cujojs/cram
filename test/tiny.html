@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>tiny test</title>
+
+<script src="../../curl/src/curl.js"></script>
+<script>
+	curl({
+		"baseUrl": "../",
+		"paths": {
+			"js": "test",
+			"js/tiny": "test/output/built"
+		},
+		"pluginPath": "../curl/src/curl/plugin"
+	}, ['js/tiny'], function () {
+		console.log('page is loaded');
+	});
+</script>
+</head>
+<body>
+<p>use the following command lines to build js/tiny:</p>
+<ul>
+	<li>bin/cram.sh -e jsc -r "js/tiny" -c test/tinycfg.json</li>
+	<li>bin/cram.sh -e rhino -r "js/tiny" -c test/tinycfg.json</li>
+</ul>
+</body>
+</html>

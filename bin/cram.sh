@@ -92,7 +92,6 @@ echo "prefetcher stub generated: $FETCHER"
 	IFS=","
 	for URL in $URLS
 	do
-		# FIXME: removing newlines can instigate latent syntax errors
 		JSCODE=$(cat "$URL" | "$BINDIR"/jsescape.sh)
 		echo "fetcher.store(\"$URL\", \"$JSCODE\");" >> "$FETCHER"
 	done

@@ -72,7 +72,7 @@
 			// get plugin module
 			url = resolver.toUrl(pluginParts.pluginId);
 			module = this.loader.load(pluginParts.pluginId);
-
+print('module?', module && module.build);
 			// write output
 			if (typeof module.build == 'function') {
 
