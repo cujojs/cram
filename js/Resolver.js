@@ -46,13 +46,23 @@
 			return isPlugin(id);
 		},
 
-		toAbsPluginResourceId: function toAbsPluginResourceId (id) {
+		toPluginUrl: function toPluginUrl (id) {
 			var absId, pluginParts;
 			pluginParts = extractPluginIdParts(id);
 			absId = this.toAbsMid(pluginParts.pluginId);
 			if (absId.indexOf('/') < 0 && 'pluginPath' in this) {
 				absId = joinPath(this.pluginPath, absId);
 			}
+			return this.toUrl(absId);
+		},
+
+		toAbsPluginResourceId: function toAbsPluginResourceId (id) {
+			var absId, pluginParts;
+			pluginParts = extractPluginIdParts(id);
+			absId = this.toAbsMid(pluginParts.pluginId);
+//			if (absId.indexOf('/') < 0 && 'pluginPath' in this) {
+//				absId = joinPath(this.pluginPath, absId);
+//			}
 			return absId + '!' + (pluginParts.resource || '');
 		},
 

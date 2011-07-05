@@ -83,7 +83,7 @@
 			deps = [depId];
 
 			// get plugin module
-			url = resolver.toUrl(pluginParts.pluginId);
+			url = resolver.toPluginUrl(pluginParts.pluginId);
 			module = this.loader.load(url);
 
 			// ask plugin to look for more dependencies

@@ -5,16 +5,21 @@
 
 <script src="../../curl/src/curl.js"></script>
 <script>
-	curl({
-		"baseUrl": "../",
-		"paths": {
-			"js": "test",
-			"js/tiny": "test/output/built"
+	curl(
+		{
+			"baseUrl": "../",
+			"paths": {
+				"js": "test",
+				"js/tiny": "test/output/built",
+				"curl": "../curl/src/curl"
+			},
+			"pluginPath": "curl/plugin"
 		},
-		"pluginPath": "../curl/src/curl/plugin"
-	}, ['js/tiny'], function () {
-		console.log('page is loaded');
-	});
+		['js/tiny'],
+		function (tiny) {
+			console.log('page is loaded');
+		}
+	);
 </script>
 </head>
 <body>

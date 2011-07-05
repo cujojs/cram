@@ -14,10 +14,14 @@ function analyze (moduleSource, parentId, config) {
 		var absId, pluginId;
 
 		if (resolver.isPluginResource(dep)) {
-			// push both the plugin id and the full resource id
+			// push the full resource id, not the plugin id due to potential
+			// ambiguities with the pluginPath config param. users may try
+			// to use a url path instead of an id path and that will not
+			// resolve correctly in the analyze phase.
+			// TODO: fix the config so this is clearer
 			absId = resolver.toAbsPluginResourceId(dep);
-			pluginId = resolver.parsePluginResourceId(absId).pluginId;
-			moduleIds.push(pluginId);
+//			pluginId = resolver.parsePluginResourceId(absId).pluginId;
+//			moduleIds.push(pluginId);
 			moduleIds.push(absId);
 		}
 		else {

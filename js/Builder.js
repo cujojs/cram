@@ -67,11 +67,14 @@
 			// get parts
 			pluginParts = resolver.parsePluginResourceId(depId);
 
+			// write out plugin module
+			this.buildPluginModule(pluginParts.pluginId);
+
 			if (this.isAlreadyProcessed(depId)) return;
 
 			// get plugin module
-			url = resolver.toUrl(pluginParts.pluginId);
-			module = this.loader.load(pluginParts.pluginId);
+			url = resolver.toPluginUrl(pluginParts.pluginId);
+			module = this.loader.load(url);
 
 			// write output
 			if (typeof module.build == 'function') {
@@ -80,7 +83,7 @@
 				write = module.build(this.writer, this.fetcher, config);
 
 				// and calling its returned write method
-				write(pluginParts.resource, resolver);
+				write(pluginParts.pluginId, pluginParts.resource, resolver);
 
 			}
 			else {
@@ -92,6 +95,17 @@
 				this.buildAmdModule(depId);
 
 			}
+		},
+
+		buildPluginModule: function buildPluginModule (moduleId) {
+			var url, source;
+
+			if (this.isAlreadyProcessed(moduleId)) return;
+
+			url = this.resolver.toPluginUrl(moduleId);
+			source = this.insertModuleId(moduleId, this.fetcher(url));
+			this.writer(source);
+
 		},
 
 		buildAmdModule: function buildAmdModule (moduleId) {

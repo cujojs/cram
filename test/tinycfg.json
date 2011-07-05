@@ -3,8 +3,9 @@
 	"baseUrl": "",
 	"destFile": "test/output/built.js",
 	"paths": {
-		"js": "test"
+		"js": "test",
+		"curl": "../curl/src/curl"
 	},
-	"pluginPath": "../curl/src/curl/plugin"
+	"pluginPath": "curl/plugin"
 
 }
