@@ -14,13 +14,9 @@ ANALYZER="$JSDIR"/Analyzer.js
 RUNNER="$BINDIR"/jsrun.sh
 LOADER="$JSDIR"/SimpleAmdLoader.js
 ANALYZE="$JSDIR"/analyze.js
+COLLECT="$JSDIR"/collect.js
 
-# resolve module id to url
-
-JSCMD="var resolver = new Resolver(\"$2\", $CONFIG); print(resolver.toUrl(\"$1\"));"
-MODURL=$("$RUNNER" "$JSCMD" "$RESOLVER")
-
-# Recursively print dependencies JSON
+# Function to recursively print dependencies JSON
 function printDeps () {
 	local MODID=$1
 	local URL=$2
@@ -67,7 +63,26 @@ function printDeps () {
 	fi
 }
 
-printDeps "$1" "$MODURL" "$2"
+# if we have an engine that can load non-js files
+if [[ "$ENGINECAPS" =~ hasReadFile=true ]]; then
 
-# include root module id
-echo "\"$1\""
+	# recurse in javascript (faster?)
+	FETCHER="$JSDIR"/readFileFetcher.js
+	JSCMD="print(JSON.stringify(collect(\"$1\", \"$2\", $CONFIG)));"
+	echo $("$RUNNER" "$JSCMD" "$JSON" "$LOADER" "$FETCHER" "$RESOLVER" "$ANALYZER" "$ANALYZE" "$COLLECT")
+
+else
+
+	# emit start of array
+	echo '['
+
+	# recurse through dependencies in this script (slower?)
+	JSCMD="var resolver = new Resolver(\"$2\", $CONFIG); print(resolver.toUrl(\"$1\"));"
+	MODURL=$("$RUNNER" "$JSCMD" "$RESOLVER")
+	printDeps "$1" "$MODURL" "$2"
+
+	# include root module id and end of array
+	echo "\"$1\"]"
+
+fi
+

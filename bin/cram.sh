@@ -85,7 +85,7 @@ echo "prefetcher stub generated: $FETCHER"
 	cat "$JSDIR"/prefetcher.js > "$FETCHER"
 
 	# prefetch all modules and resources as function calls into prefetch loader
-	URLS=$("$JSRUN" "var resolver = new Resolver('', $CONFIG); print(fetcher.extractUrls([$MODULEINFO], resolver));" "$FETCHER" "$RESOLVER")
+	URLS=$("$JSRUN" "var resolver = new Resolver('', $CONFIG); print(fetcher.extractUrls($MODULEINFO, resolver));" "$FETCHER" "$RESOLVER")
 
 	# for each module/resource: fetcher.store("text data");
 	ORIGIFS=$IFS

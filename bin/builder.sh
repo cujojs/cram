@@ -16,11 +16,11 @@ BUILD="$JSDIR"/build.js
 
 # create javascript snippet
 
-MODULEARRAY='['$@']'
+MODULEARRAY=$@
 
 JS="build($CONFIG, $MODULEARRAY);"
 
-echo "build snippet = $JS"
+echo "build call = $JS"
 
 # pull out config options
 

@@ -72,7 +72,7 @@
 			// get plugin module
 			url = resolver.toUrl(pluginParts.pluginId);
 			module = this.loader.load(pluginParts.pluginId);
-print('module?', module && module.build);
+
 			// write output
 			if (typeof module.build == 'function') {
 
@@ -80,7 +80,7 @@ print('module?', module && module.build);
 				write = module.build(this.writer, this.fetcher, config);
 
 				// and calling its returned write method
-				write(pluginParts.resourceId, resolver);
+				write(pluginParts.resource, resolver);
 
 			}
 			else {
