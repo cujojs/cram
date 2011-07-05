@@ -38,6 +38,8 @@ do
 		-c|--config)
 			shift
 			CONFIG=$(echo $(cat "$1")) #echo removes line feeds!
+			# FIXME: Need a better way to extract json params from config
+			DESTURL=$("$BINDIR/jsrun.sh" "var c=$CONFIG; print(c.destUrl);")
 			shift
 		;;
 
@@ -67,7 +69,13 @@ export JSENGINE JSRUN ENGINECAPS JSON BINDIR JSDIR CONFIG
 
 # HACK: Not great, but we end up with back-to-back arrays, so replace ][ with
 # a comma to form a single array
-MODULEINFO=$("$COLLECTOR" "$ROOTID" | sed 's/\]\[/,/g')
+MODULEINFO=$("$COLLECTOR" "$ROOTID")
+RV=$?
+if [ $RV -ne 0 ];then
+	exit $RV
+else
+	MODULEINFO=${MODULEINFO//][/,}
+fi
 
 echo "moduleinfo =" "$MODULEINFO"
 

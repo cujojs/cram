@@ -9,7 +9,9 @@ JSEXEC=$1
 shift
 
 # dump dependencies into the temp file (rhino requires this, not jsc)
-cat $@ > "$JSTMP"
+if [ $# -gt 0 ];then
+	cat $@ > "$JSTMP"
+fi
 
 # append javascript
 echo ';'"$JSEXEC" >> "$JSTMP"
