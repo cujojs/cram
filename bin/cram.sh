@@ -52,11 +52,6 @@ do
 
 done
 
-if [[ -n "$CONFIG" ]];then
-	# FIXME: Need a better way to extract json params from config
-	DESTURL=$("$BINDIR/jsrun.sh" "var c=$CONFIG; print(c.destUrl);")
-fi
-
 # all shell-driven js engines must have at least print() and load()
 # the following var holds name=bool pairs of other js engine
 # capabilities
@@ -105,8 +100,12 @@ echo "prefetcher stub generated: $FETCHER"
 	IFS=","
 	for URL in $URLS
 	do
-		JSCODE=$(cat "$URL" | "$BINDIR"/jsescape.sh)
-		echo "fetcher.store(\"$URL\", \"$JSCODE\");" >> "$FETCHER"
+		if [[ -f "$URL" ]];then
+			JSCODE=$(cat "$URL" | "$BINDIR"/jsescape.sh)
+			echo "fetcher.store(\"$URL\", \"$JSCODE\");" >> "$FETCHER"
+		else
+			echo "ERROR: URL does not exist: $URL" >&2
+		fi
 	done
 	IFS=$ORIGIFS
 
