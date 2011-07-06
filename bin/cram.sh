@@ -65,7 +65,7 @@ if [[ ! "$ENGINECAPS" =~ hasJson=true  ]]; then
 	JSON="$JSDIR"/json2.js
 fi
 
-export JSRUN ENGINECAPS JSON BINDIR JSDIR CONFIG DESTURL
+export JSRUN ENGINECAPS JSON BINDIR JSDIR CONFIG
 
 # HACK: Not great, but we end up with back-to-back arrays, so replace ][ with
 # a comma to form a single array
