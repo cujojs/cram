@@ -1,6 +1,7 @@
 #!/bin/bash
 # starts the optimizer
 
+ME=`basename $0`
 BINDIR=`dirname $0`
 BINDIR=${BINDIR:-.}
 JSDIR="$BINDIR"/../js
@@ -10,7 +11,7 @@ TMPDIR=$(mktemp -t cram -d)
 JSTMP=$(mktemp -t cram)
 export JSTMP
 
-USAGE="opt -r root_module_id -e path_to_js_engine -c config_file"
+USAGE="$ME -r root_module_id -e path_to_js_engine -c config_file"
 
 COLLECTOR="$BINDIR"/collector.sh
 BUILDER="$BINDIR"/builder.sh
@@ -32,14 +33,13 @@ do
 		-e|--engine)
 			shift
 			JSENGINE=$1
+			export JSENGINE
 			shift
 		;;
 
 		-c|--config)
 			shift
 			CONFIG=$(echo $(cat "$1")) #echo removes line feeds!
-			# FIXME: Need a better way to extract json params from config
-			DESTURL=$("$BINDIR/jsrun.sh" "var c=$CONFIG; print(c.destUrl);")
 			shift
 		;;
 
@@ -51,6 +51,11 @@ do
 	esac
 
 done
+
+if [[ -n "$CONFIG" ]];then
+	# FIXME: Need a better way to extract json params from config
+	DESTURL=$("$BINDIR/jsrun.sh" "var c=$CONFIG; print(c.destUrl);")
+fi
 
 # all shell-driven js engines must have at least print() and load()
 # the following var holds name=bool pairs of other js engine
@@ -65,7 +70,7 @@ if [[ ! "$ENGINECAPS" =~ hasJson=true  ]]; then
 	JSON="$JSDIR"/json2.js
 fi
 
-export JSENGINE JSRUN ENGINECAPS JSON BINDIR JSDIR CONFIG
+export JSRUN ENGINECAPS JSON BINDIR JSDIR CONFIG DESTURL
 
 # HACK: Not great, but we end up with back-to-back arrays, so replace ][ with
 # a comma to form a single array

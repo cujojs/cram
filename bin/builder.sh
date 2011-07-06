@@ -25,6 +25,8 @@ echo "build call = $JS"
 # pull out config options
 
 OUTPUT=$(echo "$CONFIG" | "$BINDIR"/getjsonstring.sh "destFile")
+OUTPUT_DIR=$(dirname $OUTPUT)
+mkdir -p "$OUTPUT_DIR"
 
 # execute it
 
