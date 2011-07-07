@@ -23,7 +23,7 @@ export JSENGINE JSENGINEOPTS
 JSTMP=$(mktemp -t cram)
 export JSTMP
 
-USAGE="$ME -r root_module_id -e path_to_js_engine -c config_file"
+USAGE="$ME [-e path_to_js_engine] -r root_module_id -c config_file"
 
 #COLLECTOR="$BINDIR"/collector.sh
 BUILDER="$BINDIR"/builder.sh
@@ -65,13 +65,19 @@ do
 
 done
 
+if [[ "$JSENGINE" = "" ]]; then
+	echo "Cannot find Rhino. You must specify a JavaScript engine with -e"
+	echo $USAGE
+	exit 1
+fi
+
 # all shell-driven js engines must have at least print() and load()
 # the following var holds name=bool pairs of other js engine
 # capabilities
 
 ENGINECAPS=$("$JSENGINE" "$JSDIR/jsEngineCaps.js")
 
-echo "js engine capabilites = $ENGINECAPS"
+echo "js engine: $JSENGINE ($ENGINECAPS)"
 
 if [[ ! "$ENGINECAPS" =~ hasJson=true  ]]; then
 	#rhino 1.7r2  needs this, jsc and rhino 1.7r3 do not
