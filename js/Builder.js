@@ -41,7 +41,6 @@
 
 			// moduleList is an array of module info objects:
 			moduleList.forEach(function (moduleInfo) {
-
 				moduleId = moduleInfo.moduleId;
 				resolver = new this.Resolver(moduleInfo.parentId, config);
 
@@ -73,6 +72,7 @@
 			this.buildPluginModule(pluginParts.pluginId, resolver);
 
 			if (this.isAlreadyProcessed(depId)) return;
+			this.processed[depId] = true;
 
 			// get plugin module
 			url = resolver.toPluginUrl(pluginParts.pluginId);
@@ -95,7 +95,7 @@
 				// as out (e.g. it probably gets its resources via xhr or has
 				// nothing to load) so just write-out a call to load the
 				// resource using the plugin just like outside a build
-				this.buildAmdModule(depId);
+				this.buildAmdModule(depId, resolver);
 
 			}
 		},
@@ -104,6 +104,7 @@
 			var url, source;
 
 			if (this.isAlreadyProcessed(moduleId)) return;
+			this.processed[moduleId] = true;
 
 			url = resolver.toPluginUrl(moduleId);
 			source = this.insertModuleId(moduleId, this.fetcher(url));
@@ -114,10 +115,12 @@
 		buildAmdModule: function buildAmdModule (moduleId, resolver) {
 			var url, absId, source;
 
-			if (this.isAlreadyProcessed(moduleId)) return;
-
 			url = resolver.toUrl(moduleId);
 			absId = resolver.toAbsMid(moduleId);
+
+			if (this.isAlreadyProcessed(absId)) return;
+			this.processed[absId] = true;
+
 			source = this.insertModuleId(absId, this.fetcher(url));
 			this.writer(source);
 

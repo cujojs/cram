@@ -17,6 +17,10 @@
 
 	// removes commas and quotes
 	cleanDepsRx = /["']+\s*([^"']+)/g;
+	
+	// It's probably too aggressive to put this so high up in the scope, but
+	// for now, it'll do since we always start up a new VM for each build.
+	seen = {};
 
 	// analyzer constructor
 	function Analyzer () {}
@@ -33,7 +37,7 @@
 
 		// fetcher is a text fetcher
 		fetcher: null,
-
+		
 		analyze: function (moduleId, parentId, config) {
 			var resolver, absId, pluginParts, pluginId, resource,
 				moduleIds, url, moduleSource;
@@ -50,9 +54,13 @@
 			}
 			else {
 				absId = this.resolver.toAbsMid(moduleId);
-				url = this.resolver.toUrl(absId);
-				moduleSource = this.fetcher.fetch(url);
-				moduleIds = this.parse(moduleSource, absId, config);
+				if(!seen[absId]) {
+					seen[absId] = true;
+					
+					url = this.resolver.toUrl(absId);
+					moduleSource = this.fetcher.fetch(url);
+					moduleIds = this.parse(moduleSource, absId, config);
+				}
 			}
 
 			return moduleIds.concat([{
@@ -92,23 +100,29 @@
 		},
 
 		analyzePluginResource: function (pluginId, resource, parentId, config) {
-			var resolver, module, url, deps, api;
+			var resolver, loader, module, url, deps, api, seen;
 
 			deps = [];
 
 			// get plugin module
+			loader = this.loader;
 			resolver = new this.Resolver('', config);
 			url = resolver.toPluginUrl(pluginId);
-			this.loader.resolver = resolver;
-			module = this.loader.load(url);
+			loader.resolver = resolver;
+			module = loader.load(url);
+			
+			if(!module) {
+				print("ERR module is null:", url, pluginId);
+				return deps;
+			}
 
 			resolver = new this.Resolver(parentId, config);
-			this.loader.resolver = resolver;
+			loader.resolver = resolver;
 
 			// ask plugin to look for more dependencies
-			if (typeof module.analyze == 'function') {
+			if (typeof module.analyze == 'function') {				
 				api = {
-					load: this.loader.load,
+					load: function(id) { return loader.load(id); },
 					toUrl: function (id) { return resolver.toUrl(id); },
 					toAbsMid: function (id) { return resolver.toAbsMid(id); }
 				};
@@ -116,7 +130,7 @@
 					deps = deps.concat(this.analyze(resourceId, parentId, config));
 				});
 			}
-
+			
 			return deps;
 		},
 

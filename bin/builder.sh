@@ -16,11 +16,15 @@ BUILD="$JSDIR"/build.js
 
 # create javascript snippet
 
-MODULEARRAY=$@
+MODULEINFOFILE=$1
 
-JS="build($CONFIG, $MODULEARRAY);"
+# Build a new file containing the call to build() with the (potentially huge)
+# module info array
+JSFILE="${MODULEINFOFILE}-build.js"
 
-echo "build call = $JS"
+echo -n "build($CONFIG, " > $JSFILE
+cat $MODULEINFOFILE >> $JSFILE
+echo -n ");" >> $JSFILE
 
 # pull out config options
 
@@ -29,5 +33,7 @@ OUTPUT_DIR=$(dirname $OUTPUT)
 mkdir -p "$OUTPUT_DIR"
 
 # execute it
-
-"$JSRUN" "$JS" "$BUILDER" "$LOADER" "$FETCHER" "$WRITER" "$RESOLVER" "$BUILD" > "$OUTPUT"
+# NOTE: No first param, because we already have the build() in the
+# $JSFILE.  Trying to put the build() call as text on the command line here
+# can exceed the shell's argument length!
+"$JSRUN" '' "$BUILDER" "$LOADER" "$FETCHER" "$WRITER" "$RESOLVER" "$BUILD" "$JSFILE" > "$OUTPUT"

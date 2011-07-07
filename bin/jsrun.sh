@@ -17,4 +17,4 @@ fi
 echo ';'"$JSEXEC" >> "$JSTMP"
 
 # execute it
-"$JSENGINE" "$JSTMP"
+"$JSENGINE" "$JENGINEOPTS" "$JSTMP"

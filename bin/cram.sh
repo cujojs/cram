@@ -5,7 +5,19 @@ ME=`basename $0`
 BINDIR=`dirname $0`
 BINDIR=${BINDIR:-.}
 JSDIR="$BINDIR"/../js
-TMPDIR=$(mktemp -t cram -d)
+# TMPDIR=$(mktemp -t cram -d)
+TMPDIR=/tmp
+
+# Default to rhino
+JSENGINE=$(which rhino)
+
+# FIMXE: Have to use rhino interpreted mode due to Java's 64k method byte-size
+# limit, since cram may generate a call to build() with a very large dependency
+# array.
+# See: http://coachwei.sys-con.com/node/676073/mobile
+JSENGINEOPTS="-O \'-1\'"
+
+export JSENGINE JSENGINEOPTS
 
 # optimization for jsrun.sh
 JSTMP=$(mktemp -t cram)
@@ -33,7 +45,8 @@ do
 		-e|--engine)
 			shift
 			JSENGINE=$1
-			export JSENGINE
+			unset JSENGINEOPTS
+			export JSENGINE JSENGINEOPTS
 			shift
 		;;
 
@@ -78,10 +91,12 @@ LOADER="$JSDIR"/SimpleAmdLoader.js
 ANALYZER="$JSDIR"/Analyzer.js
 ANALYZE="$JSDIR"/analyze.js
 
-JSCMD="print(JSON.stringify(analyze(\"$ROOTID\", \"\", $CONFIG)));"
-MODULEINFO=$("$JSRUN" "$JSCMD" "$FETCHER" "$RESOLVER" "$LOADER" "$JSON" "$ANALYZER" "$ANALYZE")
+MODULEINFO="$TMPDIR/moduleinfo.js"
 
-echo "found modules $MODULEINFO"
+JSCMD="print(JSON.stringify(analyze(\"$ROOTID\", \"\", $CONFIG)));"
+"$JSRUN" "$JSCMD" "$FETCHER" "$RESOLVER" "$LOADER" "$JSON" "$ANALYZER" "$ANALYZE" > "$MODULEINFO"
+
+# echo "found modules $MODULEINFO"
 
 # we're ready to build!
 
