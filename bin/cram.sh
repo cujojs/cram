@@ -17,7 +17,7 @@ JSENGINE=$(which rhino)
 # limit, since cram may generate a call to build() with a very large dependency
 # array.
 # See: http://coachwei.sys-con.com/node/676073/mobile
-JSENGINEOPTS="-O \'-1\'"
+JSENGINEOPTS="-O -1"
 
 export JSENGINE JSENGINEOPTS
 
@@ -79,7 +79,7 @@ fi
 
 ENGINECAPS=$("$JSENGINE" "$JSDIR/jsEngineCaps.js")
 
-echo "js engine: $JSENGINE ($ENGINECAPS)"
+echo "js engine: $JSENGINE $JSENGINEOPTS ($ENGINECAPS)"
 
 if [[ ! "$ENGINECAPS" =~ hasJson=true  ]]; then
 	#rhino 1.7r2  needs this, jsc and rhino 1.7r3 do not
