@@ -5,8 +5,10 @@ ME=`basename $0`
 BINDIR=`dirname $0`
 BINDIR=${BINDIR:-.}
 JSDIR="$BINDIR"/../js
-# TMPDIR=$(mktemp -t cram -d)
-TMPDIR=/tmp
+TMPDIR=$(mktemp -t cram -d)
+
+# Testing only
+# TMPDIR=/tmp
 
 # Default to rhino
 JSENGINE=$(which rhino)
