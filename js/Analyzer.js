@@ -26,7 +26,7 @@
 		/* the following properties must be injected before calling parse() */
 
 		// resolver is a module id and/or url resolver.
-		resolver: null,
+		Resolver: null,
 
 		// loader is an AMD module loader object.
 		loader: null,
@@ -38,7 +38,7 @@
 			var resolver, absId, pluginParts, pluginId, resource,
 				moduleIds, url, moduleSource;
 
-			resolver = this.resolver;
+			resolver = new this.Resolver(parentId, config);
 			moduleIds = [];
 
 			if (resolver.isPluginResource(moduleId)) {
@@ -94,13 +94,16 @@
 		analyzePluginResource: function (pluginId, resource, parentId, config) {
 			var resolver, module, url, deps, api;
 
-			resolver = this.resolver;
-
 			deps = [];
 
 			// get plugin module
+			resolver = new this.Resolver('', config);
 			url = resolver.toPluginUrl(pluginId);
+			this.loader.resolver = resolver;
 			module = this.loader.load(url);
+
+			resolver = new this.Resolver(parentId, config);
+			this.loader.resolver = resolver;
 
 			// ask plugin to look for more dependencies
 			if (typeof module.analyze == 'function') {

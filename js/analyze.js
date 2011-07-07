@@ -8,6 +8,7 @@ function analyze (moduleId, parentId, config) {
 	loader = new Loader();
 	analyzer.loader = loader;
 	analyzer.fetcher = fetcher;
+	analyzer.Resolver = Resolver;
 	analyzer.resolver = analyzer.loader.resolver = resolver;
 
 	moduleIds = [];
