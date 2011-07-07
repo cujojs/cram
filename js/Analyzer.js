@@ -16,7 +16,7 @@
 	findDefineRx = /define\s*\((\s*[^,]*,)?\s*\[([^\]]+)\]\s*,/mg;
 
 	// removes commas and quotes
-	cleanDepsRx = /["']+\s*([^,"']+)/g;
+	cleanDepsRx = /["']+\s*([^"']+)/g;
 
 	// analyzer constructor
 	function Analyzer () {}
