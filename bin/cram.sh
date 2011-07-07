@@ -25,7 +25,7 @@ export JSENGINE JSENGINEOPTS
 JSTMP=$(mktemp -t cram)
 export JSTMP
 
-USAGE="$ME [-e path_to_js_engine] -r root_module_id -c config_file"
+USAGE="$ME [-e|--engine path_to_js_engine] [-o|--output build_output_file] -r|--root root_module_id -c|--config config_file"
 
 #COLLECTOR="$BINDIR"/collector.sh
 BUILDER="$BINDIR"/builder.sh
@@ -38,7 +38,7 @@ do
 
 	case "$arg" in
 
-		-r)
+		-r|--root)
 			shift
 			ROOTID=$1
 			shift
@@ -62,15 +62,30 @@ do
 			echo "$USAGE"
 			exit 0
 		;;
+		
+		-o|--output)
+			shift
+			BUILD_DEST=$1
+			shift
+		;;
 
 	esac
 
 done
 
 if [[ "$JSENGINE" = "" ]]; then
-	echo "Cannot find Rhino. You must specify a JavaScript engine with -e"
-	echo $USAGE
+	echo "Cannot find Rhino. You must specify a JavaScript engine with --engine"
 	exit 1
+fi
+
+# If no output file specified on the command line, look for it in the config file
+if [[ "$BUILD_DEST" = "" ]]; then
+	BUILD_DEST=$(echo "$CONFIG" | "$BINDIR"/getjsonstring.sh "destFile")
+
+	if [[ "$BUILD_DEST" = "" ]]; then
+		echo "You must specify a build destination on the command line with --output or in the config file using destFile"
+		exit 1
+	fi
 fi
 
 # all shell-driven js engines must have at least print() and load()
@@ -92,7 +107,7 @@ else
 	FETCHER="$JSDIR"/readFileFetcher.js
 fi
 
-export JSRUN ENGINECAPS JSON BINDIR JSDIR CONFIG FETCHER
+export JSRUN ENGINECAPS JSON BINDIR JSDIR CONFIG FETCHER BUILD_DEST
 
 RESOLVER="$JSDIR"/Resolver.js
 LOADER="$JSDIR"/SimpleAmdLoader.js

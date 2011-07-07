@@ -28,12 +28,11 @@ echo -n ");" >> $JSFILE
 
 # pull out config options
 
-OUTPUT=$(echo "$CONFIG" | "$BINDIR"/getjsonstring.sh "destFile")
-OUTPUT_DIR=$(dirname $OUTPUT)
+OUTPUT_DIR=$(dirname $BUILD_DEST)
 mkdir -p "$OUTPUT_DIR"
 
 # execute it
 # NOTE: No first param, because we already have the build() in the
 # $JSFILE.  Trying to put the build() call as text on the command line here
 # can exceed the shell's argument length!
-"$JSRUN" '' "$BUILDER" "$LOADER" "$FETCHER" "$WRITER" "$RESOLVER" "$BUILD" "$JSFILE" > "$OUTPUT"
+"$JSRUN" '' "$BUILDER" "$LOADER" "$FETCHER" "$WRITER" "$RESOLVER" "$BUILD" "$JSFILE" > "$BUILD_DEST"
