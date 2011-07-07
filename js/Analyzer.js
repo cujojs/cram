@@ -31,6 +31,33 @@
 		// loader is an AMD module loader object.
 		loader: null,
 
+		// fetcher is a text fetcher
+		fetcher: null,
+
+		analyze: function (moduleId, config) {
+			var resolver, absId, pluginParts, pluginId, resource,
+				moduleIds, url, moduleSource;
+
+			resolver = this.resolver;
+			moduleIds = [];
+
+			if (resolver.isPluginResource(moduleId)) {
+				pluginParts = resolver.parsePluginResourceId(moduleId);
+				pluginId = resolver.toAbsMid(pluginParts.pluginId);
+				resource = pluginParts.resource;
+				moduleIds = this.analyze(pluginId, config);
+				moduleIds = moduleIds.concat(this.analyzePluginResource(pluginId, resource, config));
+			}
+			else {
+				absId = this.resolver.toAbsMid(moduleId);
+				url = this.resolver.toUrl(absId);
+				moduleSource = this.fetcher.fetch(url);
+				moduleIds = this.parse(moduleSource, config);
+			}
+
+			return moduleIds.concat([moduleId]);
+		},
+
 		parse: function parse (source, config) {
 			// collect dependencies found
 			var self, deps;
@@ -47,22 +74,13 @@
 				if (depsList) {
 					// extract the ids
 					self.scan(depsList, cleanDepsRx, function (match, depId) {
-
-						if (self.resolver.isPluginResource(depId)) {
-							deps.push.apply(deps, self.analyzePluginResource(depId));
-						}
-						else {
-							// just a module
-							deps.push(depId);
-						}
-
+						deps = deps.concat(self.analyze(depId, config));
 					});
 				}
 
 			});
 
 			return deps;
-
 		},
 
 		scan: function scan (str, rx, lambda) {
@@ -70,32 +88,21 @@
 			str.replace(rx, lambda);
 		},
 
-		analyzePluginResource: function (depId) {
+		analyzePluginResource: function (pluginId, resource, config) {
 			var resolver, pluginParts, module, url, deps;
 
 			resolver = this.resolver;
 
-			// resolve to absolute path
-			depId = resolver.toAbsPluginResourceId(depId);
-			// get parts
-			pluginParts = resolver.parsePluginResourceId(depId);
-
-			deps = [depId];
+			deps = [];
 
 			// get plugin module
-			url = resolver.toPluginUrl(pluginParts.pluginId);
+			url = resolver.toPluginUrl(pluginId);
 			module = this.loader.load(url);
 
 			// ask plugin to look for more dependencies
 			if (typeof module.analyze == 'function') {
-				module.analyze(depId, this.loader.load, function (resourceId) {
-					// TODO: is it the plugin's job or the builder's job to
-					// resolve the absolute module id of these dependencies?
-					// during the build phase, we hand a resolver to the plugin
-					// module. should we do that here? or should we use the
-					// following code?
-					var absId = resolver.toAbsMid(resourceId);
-					deps.push(absId);
+				module.analyze(resource, this.loader.load, function (resourceId) {
+					deps = deps.concat(this.analyze(resourceId, config));
 				});
 			}
 

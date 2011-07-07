@@ -13,7 +13,7 @@ export JSTMP
 
 USAGE="$ME -r root_module_id -e path_to_js_engine -c config_file"
 
-COLLECTOR="$BINDIR"/collector.sh
+#COLLECTOR="$BINDIR"/collector.sh
 BUILDER="$BINDIR"/builder.sh
 JSRUN="$BINDIR/jsrun.sh"
 
@@ -61,61 +61,27 @@ ENGINECAPS=$("$JSENGINE" "$JSDIR/jsEngineCaps.js")
 echo "js engine capabilites = $ENGINECAPS"
 
 if [[ ! "$ENGINECAPS" =~ hasJson=true  ]]; then
-	#rhino needs this, jsc does not
+	#rhino 1.7r2  needs this, jsc and rhino 1.7r3 do not
 	JSON="$JSDIR"/json2.js
 fi
 
-export JSRUN ENGINECAPS JSON BINDIR JSDIR CONFIG
-
-# HACK: Not great, but we end up with back-to-back arrays, so replace ][ with
-# a comma to form a single array
-MODULEINFO=$("$COLLECTOR" "$ROOTID")
-RV=$?
-if [ $RV -ne 0 ];then
-	exit $RV
-else
-	MODULEINFO=${MODULEINFO//][/,}
-fi
-
-echo "moduleinfo =" "$MODULEINFO"
-
-# some js engines can't fetch text resources (jsc)
-# so we have to prefetch them into a js module
-
 if [[ ! "$ENGINECAPS" =~ hasReadFile=true ]]; then
-
-	# create a temporary prefetch loader javascript module
 	FETCHER="$TMPDIR"/prefetcher.js
-	RESOLVER="$JSDIR"/Resolver.js
-echo "prefetcher stub generated: $FETCHER"
-
-	# append a copy of the base prefetchLoader module
-	cat "$JSDIR"/prefetcher.js > "$FETCHER"
-
-	# prefetch all modules and resources as function calls into prefetch loader
-	URLS=$("$JSRUN" "var resolver = new Resolver('', $CONFIG); print(fetcher.extractUrls($MODULEINFO, resolver));" "$FETCHER" "$RESOLVER")
-
-	# for each module/resource: fetcher.store("text data");
-	ORIGIFS=$IFS
-	IFS=","
-	for URL in $URLS
-	do
-		if [[ -f "$URL" ]];then
-			JSCODE=$(cat "$URL" | "$BINDIR"/jsescape.sh)
-			echo "fetcher.store(\"$URL\", \"$JSCODE\");" >> "$FETCHER"
-		else
-			echo "ERROR: URL does not exist: $URL" >&2
-		fi
-	done
-	IFS=$ORIGIFS
-
 else
-
 	FETCHER="$JSDIR"/readFileFetcher.js
-
 fi
 
-export FETCHER
+export JSRUN ENGINECAPS JSON BINDIR JSDIR CONFIG FETCHER
+
+RESOLVER="$JSDIR"/Resolver.js
+LOADER="$JSDIR"/SimpleAmdLoader.js
+ANALYZER="$JSDIR"/Analyzer.js
+ANALYZE="$JSDIR"/analyze.js
+
+JSCMD="print(JSON.stringify(analyze(\"$ROOTID\", \"\", $CONFIG)));"
+MODULEINFO=$("$JSRUN" "$JSCMD" "$FETCHER" "$RESOLVER" "$LOADER" "$JSON" "$ANALYZER" "$ANALYZE")
+
+echo "found modules $MODULEINFO"
 
 # we're ready to build!
 

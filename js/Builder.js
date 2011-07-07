@@ -76,6 +76,7 @@
 			url = resolver.toPluginUrl(pluginParts.pluginId);
 			module = this.loader.load(url);
 
+print('resource', pluginParts.resource);
 			// write output
 			if (typeof module.build == 'function') {
 
