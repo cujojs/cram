@@ -1,3 +1,3 @@
-define(['js/depB'], {
+define(['./depB'], {
 	a: 1
 });

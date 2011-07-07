@@ -12,7 +12,7 @@ function analyze (moduleId, parentId, config) {
 
 	moduleIds = [];
 
-	moduleIds = analyzer.analyze(moduleId, config);
+	moduleIds = analyzer.analyze(moduleId, '', config);
 
 	return moduleIds;
 

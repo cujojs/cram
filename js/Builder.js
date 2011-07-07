@@ -13,7 +13,7 @@
 		// resolver is a module id and or url resolver. it has two methods:
 		//   toUrl(moduleId)
 		//   toAbsMid(moduleId, parentId)
-		resolver: null,
+		Resolver: null,
 
 		// loader is a module loader object with a load function. parameters:
 		//   moduleId: the normalized module id
@@ -37,16 +37,20 @@
 		processed: {},
 
 		build: function build (moduleList, config) {
-			
+			var resolver, moduleId;
+
 			// moduleList is an array of module info objects:
-			moduleList.forEach(function (moduleId) {
+			moduleList.forEach(function (moduleInfo) {
+
+				moduleId = moduleInfo.moduleId;
+				resolver = new this.Resolver(moduleInfo.parentId, config);
 
 				// is this a plugin-based module/resource?
-				if (this.resolver.isPluginResource(moduleId)) {
-					this.buildPluginResource(moduleId, config);
+				if (resolver.isPluginResource(moduleId)) {
+					this.buildPluginResource(moduleId, resolver, config);
 				}
 				else {
-					this.buildAmdModule(moduleId);
+					this.buildAmdModule(moduleId, resolver);
 				}
 
 			}, this);
@@ -57,10 +61,8 @@
 			return !!this.processed[moduleId];
 		},
 
-		buildPluginResource: function buildPluginResource (depId, config) {
-			var resolver, pluginParts, url, module, write;
-
-			resolver = this.resolver;
+		buildPluginResource: function buildPluginResource (depId, resolver, config) {
+			var pluginParts, url, module, write;
 
 			// resolve to absolute path
 			depId = resolver.toAbsPluginResourceId(depId);
@@ -68,15 +70,15 @@
 			pluginParts = resolver.parsePluginResourceId(depId);
 
 			// write out plugin module
-			this.buildPluginModule(pluginParts.pluginId);
+			this.buildPluginModule(pluginParts.pluginId, resolver);
 
 			if (this.isAlreadyProcessed(depId)) return;
 
 			// get plugin module
 			url = resolver.toPluginUrl(pluginParts.pluginId);
+			this.loader.resolver = resolver;
 			module = this.loader.load(url);
 
-print('resource', pluginParts.resource);
 			// write output
 			if (typeof module.build == 'function') {
 
@@ -98,24 +100,25 @@ print('resource', pluginParts.resource);
 			}
 		},
 
-		buildPluginModule: function buildPluginModule (moduleId) {
+		buildPluginModule: function buildPluginModule (moduleId, resolver) {
 			var url, source;
 
 			if (this.isAlreadyProcessed(moduleId)) return;
 
-			url = this.resolver.toPluginUrl(moduleId);
+			url = resolver.toPluginUrl(moduleId);
 			source = this.insertModuleId(moduleId, this.fetcher(url));
 			this.writer(source);
 
 		},
 
-		buildAmdModule: function buildAmdModule (moduleId) {
-			var url, source;
+		buildAmdModule: function buildAmdModule (moduleId, resolver) {
+			var url, absId, source;
 
 			if (this.isAlreadyProcessed(moduleId)) return;
 
-			url = this.resolver.toUrl(moduleId);
-			source = this.insertModuleId(moduleId, this.fetcher(url));
+			url = resolver.toUrl(moduleId);
+			absId = resolver.toAbsMid(moduleId);
+			source = this.insertModuleId(absId, this.fetcher(url));
 			this.writer(source);
 
 		},

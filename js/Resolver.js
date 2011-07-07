@@ -76,6 +76,8 @@
 
 	};
 
+	Resolver.isPluginResource = Resolver.prototype.isPluginResource;
+
 	function isPlugin (moduleId) {
 		return moduleId.indexOf('!') >= 0;
 	}

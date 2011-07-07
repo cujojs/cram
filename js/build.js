@@ -3,9 +3,8 @@
 function build (config, moduleInfo) {
 
 	var builder = new Builder();
-	builder.resolver = new Resolver('', config);
+	builder.Resolver = Resolver;
 	builder.loader = new Loader();
-	builder.loader.resolver = builder.resolver;
 	builder.fetcher = fetcher.fetch;
 	builder.writer = writer.getWriter();
 	builder.build(moduleInfo, config);

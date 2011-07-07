@@ -34,7 +34,7 @@
 		// fetcher is a text fetcher
 		fetcher: null,
 
-		analyze: function (moduleId, config) {
+		analyze: function (moduleId, parentId, config) {
 			var resolver, absId, pluginParts, pluginId, resource,
 				moduleIds, url, moduleSource;
 
@@ -45,20 +45,23 @@
 				pluginParts = resolver.parsePluginResourceId(moduleId);
 				pluginId = resolver.toAbsMid(pluginParts.pluginId);
 				resource = pluginParts.resource;
-				moduleIds = this.analyze(pluginId, config);
-				moduleIds = moduleIds.concat(this.analyzePluginResource(pluginId, resource, config));
+				moduleIds = this.analyze(pluginId, '', config);
+				moduleIds = moduleIds.concat(this.analyzePluginResource(pluginId, resource, parentId, config));
 			}
 			else {
 				absId = this.resolver.toAbsMid(moduleId);
 				url = this.resolver.toUrl(absId);
 				moduleSource = this.fetcher.fetch(url);
-				moduleIds = this.parse(moduleSource, config);
+				moduleIds = this.parse(moduleSource, absId, config);
 			}
 
-			return moduleIds.concat([moduleId]);
+			return moduleIds.concat([{
+				moduleId: moduleId,
+				parentId: parentId
+			}]);
 		},
 
-		parse: function parse (source, config) {
+		parse: function parse (source, parentId, config) {
 			// collect dependencies found
 			var self, deps;
 
@@ -74,7 +77,7 @@
 				if (depsList) {
 					// extract the ids
 					self.scan(depsList, cleanDepsRx, function (match, depId) {
-						deps = deps.concat(self.analyze(depId, config));
+						deps = deps.concat(self.analyze(depId, parentId, config));
 					});
 				}
 
@@ -88,8 +91,8 @@
 			str.replace(rx, lambda);
 		},
 
-		analyzePluginResource: function (pluginId, resource, config) {
-			var resolver, pluginParts, module, url, deps;
+		analyzePluginResource: function (pluginId, resource, parentId, config) {
+			var resolver, module, url, deps, api;
 
 			resolver = this.resolver;
 
@@ -101,8 +104,13 @@
 
 			// ask plugin to look for more dependencies
 			if (typeof module.analyze == 'function') {
-				module.analyze(resource, this.loader.load, function (resourceId) {
-					deps = deps.concat(this.analyze(resourceId, config));
+				api = {
+					load: this.loader.load,
+					toUrl: function (id) { return resolver.toUrl(id); },
+					toAbsMid: function (id) { return resolver.toAbsMid(id); }
+				};
+				module.analyze(resource, api, function (resourceId) {
+					deps = deps.concat(this.analyze(resourceId, parentId, config));
 				});
 			}
 
