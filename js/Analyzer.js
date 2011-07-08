@@ -7,7 +7,7 @@
 "use strict";
 
 	// regexes
-	var removeCommentsRx, findDefineRx, cleanDepsRx;
+	var removeCommentsRx, findDefineRx, cleanDepsRx, seen;
 
 	// TODO: this was an easy regexp to create, but find a more performant one?
 	removeCommentsRx = /\/\*.*?\*\/|\/\/.*?\n/g;
@@ -47,7 +47,7 @@
 
 			if (resolver.isPluginResource(moduleId)) {
 				pluginParts = resolver.parsePluginResourceId(moduleId);
-				pluginId = resolver.toAbsMid(pluginParts.pluginId);
+				pluginId = resolver.toAbsPluginId(pluginParts.pluginId);
 				resource = pluginParts.resource;
 				moduleIds = this.analyze(pluginId, '', config);
 				moduleIds = moduleIds.concat(this.analyzePluginResource(pluginId, resource, parentId, config));
@@ -99,20 +99,19 @@
 			str.replace(rx, lambda);
 		},
 
-		analyzePluginResource: function (pluginId, resource, parentId, config) {
-			var resolver, loader, module, url, deps, api, seen;
+		analyzePluginResource: function (absId, resource, parentId, config) {
+			var resolver, loader, module, deps, api, seen;
 
 			deps = [];
 
 			// get plugin module
 			loader = this.loader;
 			resolver = new this.Resolver('', config);
-			url = resolver.toPluginUrl(pluginId);
 			loader.resolver = resolver;
-			module = loader.load(url);
+			module = loader.load(absId);
 			
 			if(!module) {
-				print("ERR module is null:", url, pluginId);
+				print("ERR module is null:", absId);
 				return deps;
 			}
 

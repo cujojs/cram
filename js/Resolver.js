@@ -47,22 +47,31 @@
 		},
 
 		toPluginUrl: function toPluginUrl (id) {
+			return this.toUrl(this.toAbsPluginId(id));
+		},
+
+		toAbsPluginId: function toAbsPluginId (id) {
 			var absId, pluginParts;
-			pluginParts = extractPluginIdParts(id);
-			absId = this.toAbsMid(pluginParts.pluginId);
+			if (id.indexOf('!') >= 0) {
+				pluginParts = extractPluginIdParts(id);
+				absId = this.toAbsMid(pluginParts.pluginId);
+			}
+			else {
+				absId = id;
+			}
 			if (absId.indexOf('/') < 0 && 'pluginPath' in this) {
 				absId = joinPath(this.pluginPath, absId);
 			}
-			return this.toUrl(absId);
+			return absId;
 		},
 
 		toAbsPluginResourceId: function toAbsPluginResourceId (id) {
 			var absId, pluginParts;
 			pluginParts = extractPluginIdParts(id);
 			absId = this.toAbsMid(pluginParts.pluginId);
-//			if (absId.indexOf('/') < 0 && 'pluginPath' in this) {
-//				absId = joinPath(this.pluginPath, absId);
-//			}
+			if (absId.indexOf('/') < 0 && 'pluginPath' in this) {
+				absId = joinPath(this.pluginPath, absId);
+			}
 			return absId + '!' + (pluginParts.resource || '');
 		},
 

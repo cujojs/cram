@@ -61,7 +61,7 @@
 		},
 
 		buildPluginResource: function buildPluginResource (depId, resolver, config) {
-			var pluginParts, url, module, write;
+			var pluginParts, module, write;
 
 			// resolve to absolute path
 			depId = resolver.toAbsPluginResourceId(depId);
@@ -75,9 +75,8 @@
 			this.processed[depId] = true;
 
 			// get plugin module
-			url = resolver.toPluginUrl(pluginParts.pluginId);
 			this.loader.resolver = resolver;
-			module = this.loader.load(url);
+			module = this.loader.load(pluginParts.pluginId);
 
 			// write output
 			if (typeof module.build == 'function') {
