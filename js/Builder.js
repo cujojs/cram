@@ -1,7 +1,7 @@
 (function (global) {
 "use strict";
 
-	var insertModuleIdRx = /(define\s*\()([^"']{1})/;
+	var insertModuleIdRx = /(define\s*\()([^"'])/g;
 
 	// constructor
 	function Builder () {}
