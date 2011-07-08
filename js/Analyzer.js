@@ -10,7 +10,7 @@
 	var removeCommentsRx, findDefineRx, cleanDepsRx, seen;
 
 	// TODO: this was an easy regexp to create, but find a more performant one?
-	removeCommentsRx = /\/\*.*?\*\/|\/\/.*?\n/g;
+	removeCommentsRx = /\/\*[\s\S]*?\*\/|\/\/.*?\n/g;
 
 	// regex to find dependency lists courtesy of Brian Cavalier @briancavalier
 	findDefineRx = /define\s*\((\s*[^,]*,)?\s*\[([^\]]+)\]\s*,/mg;
@@ -110,8 +110,8 @@
 			loader.resolver = resolver;
 			module = loader.load(absId);
 			
-			if(!module) {
-				print("ERR module is null:", absId);
+			if(module === void 0) {
+				print("ERR module is undefined:", absId);
 				return deps;
 			}
 
