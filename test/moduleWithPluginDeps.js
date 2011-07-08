@@ -1,4 +1,4 @@
-define(['text!./templates/snippet.html'], function (snippet) {
+define(['text!./templates/snippet.html', 'css!./tiny.css'], function (snippet) {
 	var doc, temp, dest, node;
 	doc = window.document;
 	temp = doc.createElement('div');
