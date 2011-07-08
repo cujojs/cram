@@ -100,7 +100,7 @@
 		},
 
 		analyzePluginResource: function (absId, resource, parentId, config) {
-			var resolver, loader, module, deps, api, seen;
+			var resolver, loader, module, deps, api;
 
 			deps = [];
 
