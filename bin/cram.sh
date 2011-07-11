@@ -1,6 +1,8 @@
 #!/bin/bash
 # starts the optimizer
 
+set -x
+
 ME=`basename $0`
 BINDIR=`dirname $0`
 BINDIR=${BINDIR:-.}
@@ -17,6 +19,8 @@ JSENGINE=$(which rhino)
 # limit, since cram may generate a call to build() with a very large dependency
 # array.
 # See: http://coachwei.sys-con.com/node/676073/mobile
+# FIXME: Also, these opts will need to be handled differently when cram is engine-
+# independent
 JSENGINEOPTS="-O -1"
 
 export JSENGINE JSENGINEOPTS
@@ -47,8 +51,6 @@ do
 		-e|--engine)
 			shift
 			JSENGINE=$1
-			unset JSENGINEOPTS
-			export JSENGINE JSENGINEOPTS
 			shift
 		;;
 
