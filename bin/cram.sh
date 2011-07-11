@@ -1,8 +1,6 @@
 #!/bin/bash
 # starts the optimizer
 
-set -x
-
 ME=`basename $0`
 BINDIR=`dirname $0`
 BINDIR=${BINDIR:-.}
