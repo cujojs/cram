@@ -29,10 +29,15 @@ echo -n ");" >> $JSFILE
 # pull out config options
 
 OUTPUT_DIR=$(dirname $BUILD_DEST)
+OUTPUT_FILE=$(basename $BUILD_DEST)
 mkdir -p "$OUTPUT_DIR"
+
+TMP_BUILD_DEST="$TMPDIR/$OUTPUT_FILE"
 
 # execute it
 # NOTE: No first param, because we already have the build() in the
 # $JSFILE.  Trying to put the build() call as text on the command line here
 # can exceed the shell's argument length!
-"$JSRUN" '' "$BUILDER" "$LOADER" "$FETCHER" "$WRITER" "$RESOLVER" "$BUILD" "$JSFILE" > "$BUILD_DEST"
+"$JSRUN" '' "$BUILDER" "$LOADER" "$FETCHER" "$WRITER" "$RESOLVER" "$BUILD" "$JSFILE" > "$TMP_BUILD_DEST"
+
+cp "$TMP_BUILD_DEST" "$BUILD_DEST"

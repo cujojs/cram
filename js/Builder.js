@@ -79,7 +79,7 @@
 
 			// get plugin module
 			this.loader.resolver = resolver;
-			module = this.loader.load(resolver.toUrl(absPluginId));
+			module = this.loader.load(absPluginId);
 
 			// write output
 			if (typeof module.build == 'function') {
@@ -97,7 +97,7 @@
 				// as out (e.g. it probably gets its resources via xhr or has
 				// nothing to load) so just write-out a call to load the
 				// resource using the plugin just like outside a build
-				this.buildAmdModule(depId, resolver);
+				this.buildAmdModule(depId, absId, resolver);
 
 			}
 		},
