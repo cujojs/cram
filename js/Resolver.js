@@ -4,7 +4,7 @@
 	// constructor
 	function Resolver (parentId, config) {
 		
-		this.parentId = parentId ? parentId.substr(0, parentId.lastIndexOf('/')) : '';
+		this.baseName = parentId ? parentId.substr(0, parentId.lastIndexOf('/')) : '';
 		this.config = config;
 		this.baseUrl = config.baseUrl;
 		this.pluginPath = config.pluginPath || 'curl/plugin';
@@ -29,11 +29,11 @@
 		/* these methods conform to the CommonJS AMD proposal */
 
 		toUrl: function toUrl (id) {
-			return resolveUrl(resolvePath(this.toAbsMid(id, this.parentId), this.paths, this.pathSearchRx), this.baseUrl);
+			return resolveUrl(resolvePath(this.toAbsMid(id, this.baseName), this.paths, this.pathSearchRx), this.baseUrl);
 		},
 
 		toAbsMid: function toAbsMid (id) {
-			return normalizeName(id, this.parentId);
+			return normalizeName(id, this.baseName);
 		},
 
 		/* these methods are proprietary to cram/curl.js */

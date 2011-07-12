@@ -37,19 +37,20 @@
 		processed: {},
 
 		build: function build (moduleList, config) {
-			var resolver, moduleId;
+			var resolver, moduleId, absId;
 
 			// moduleList is an array of module info objects:
 			moduleList.forEach(function (moduleInfo) {
 				moduleId = moduleInfo.moduleId;
-				resolver = new this.Resolver(moduleInfo.parentId, config);
+				absId = moduleInfo.absId;
+				resolver = new this.Resolver(moduleInfo.parentId || '', config);
 
 				// is this a plugin-based module/resource?
 				if (resolver.isPluginResource(moduleId)) {
-					this.buildPluginResource(moduleId, resolver, config);
+					this.buildPluginResource(moduleId, absId, resolver, config);
 				}
 				else {
-					this.buildAmdModule(moduleId, resolver);
+					this.buildAmdModule(moduleId, absId, resolver);
 				}
 
 			}, this);
@@ -60,23 +61,25 @@
 			return !!this.processed[moduleId];
 		},
 
-		buildPluginResource: function buildPluginResource (depId, resolver, config) {
-			var pluginParts, module, write;
+		buildPluginResource: function buildPluginResource (depId, absId, resolver, config) {
+			var pluginParts, absPluginId, module, write;
 
 			// resolve to absolute path
-			depId = resolver.toAbsPluginResourceId(depId);
+//			depId = resolver.toAbsPluginResourceId(depId);
+
 			// get parts
 			pluginParts = resolver.parsePluginResourceId(depId);
+			absPluginId = resolver.toAbsPluginId(pluginParts.pluginId);
 
-			// write out plugin module
-			this.buildPluginModule(pluginParts.pluginId, resolver);
+//			// write out plugin module
+//			this.buildPluginModule(pluginParts.pluginId, resolver);
 
 			if (this.isAlreadyProcessed(depId)) return;
 			this.processed[depId] = true;
 
 			// get plugin module
 			this.loader.resolver = resolver;
-			module = this.loader.load(pluginParts.pluginId);
+			module = this.loader.load(resolver.toUrl(absPluginId));
 
 			// write output
 			if (typeof module.build == 'function') {
@@ -99,28 +102,28 @@
 			}
 		},
 
-		buildPluginModule: function buildPluginModule (moduleId, resolver) {
+//		buildPluginModule: function buildPluginModule (moduleId, absId, resolver) {
+//			var url, source;
+//print(moduleId, absId, this.isAlreadyProcessed(absId));
+//			if (this.isAlreadyProcessed(absId)) return;
+//			this.processed[absId] = true;
+//
+//			url = resolver.toUrl(absId);
+//print('buildPluginModule', moduleId, absId, url);
+//			source = this.insertModuleId(moduleId, this.fetcher(url));
+//			this.writer(source);
+//
+//		},
+
+		buildAmdModule: function buildAmdModule (moduleId, absId, resolver) {
 			var url, source;
 
-			if (this.isAlreadyProcessed(moduleId)) return;
-			this.processed[moduleId] = true;
-
-			url = resolver.toPluginUrl(moduleId);
-			source = this.insertModuleId(moduleId, this.fetcher(url));
-			this.writer(source);
-
-		},
-
-		buildAmdModule: function buildAmdModule (moduleId, resolver) {
-			var url, absId, source;
-
-			url = resolver.toUrl(moduleId);
-			absId = resolver.toAbsMid(moduleId);
+			url = resolver.toUrl(absId);
 
 			if (this.isAlreadyProcessed(absId)) return;
 			this.processed[absId] = true;
 
-			source = this.insertModuleId(absId, this.fetcher(url));
+			source = this.insertModuleId(moduleId, this.fetcher(url));
 			this.writer(source);
 
 		},

@@ -1,6 +1,20 @@
 /*
 	cram dependency analyzer
  	finds module/resource dependencies in a file.
+
+ 	Analyzer rules are a bit convoluted because of pluginPath and a few other
+ 	gotchas:
+ 	1) module ids must be normalized (absId) in the built file so we have to
+ 	    send the absolute ids to the Builder
+	2) plugin-based resources (plugin!resource) must allow the plugin to
+		resolve the resource's path at build time, so we have to send the
+		parentId to the Builder's Resolver.
+	3) pluginPath is a shortcut to translate module ids, but acts more like a
+		shortcut to translate the module url since we have to leave the naked
+		plugin module id (e.g. text! rather than curl/plugin.text!) in the
+		built file.
+
+
 */
 
 (function (global) {
@@ -39,34 +53,75 @@
 		fetcher: null,
 		
 		analyze: function (moduleId, parentId, config) {
-			var resolver, absId, pluginParts, pluginId, resource,
-				moduleIds, url, moduleSource;
+			var resolver, absId, pluginParts, absPluginId,
+				resource, moduleIds, url, moduleSource;
 
 			resolver = new this.Resolver(parentId, config);
 			moduleIds = [];
 
 			if (resolver.isPluginResource(moduleId)) {
+
 				pluginParts = resolver.parsePluginResourceId(moduleId);
-				pluginId = resolver.toAbsPluginId(pluginParts.pluginId);
+				absPluginId = resolver.toAbsPluginId(pluginParts.pluginId);
+				absId = resolver.toAbsPluginResourceId(moduleId);
 				resource = pluginParts.resource;
-				moduleIds = this.analyze(pluginId, '', config);
-				moduleIds = moduleIds.concat(this.analyzePluginResource(pluginId, resource, parentId, config));
+
+				if (!(absId in seen)) {
+					
+					seen[absId] = true;
+
+					// add plugin's module and any dependencies
+					if (!(pluginParts.pluginId in seen)) {
+
+						url = this.resolver.toUrl(absPluginId);
+						moduleSource = this.fetcher.fetch(url);
+						moduleIds = moduleIds.concat(this.parse(moduleSource, absPluginId, config));
+
+						moduleIds = moduleIds.concat([{
+							moduleId: pluginParts.pluginId,
+							absId: absPluginId
+						}]);
+
+					}
+
+					// get any special resources/modules from the plugin
+					moduleIds = moduleIds.concat(this.analyzePluginResource(absPluginId, resource, parentId, config));
+
+					// finally add the plugin resource itself (e.g. text!./some/template.html)
+					moduleIds = moduleIds.concat([{
+						moduleId: moduleId,
+						absId: absId,
+						parentId: parentId
+					}]);
+
+				}
+
 			}
 			else {
-				absId = this.resolver.toAbsMid(moduleId);
-				if(!seen[absId]) {
+
+				absId = resolver.toAbsMid(moduleId);
+
+				if (!(absId in seen)) {
+
 					seen[absId] = true;
-					
-					url = this.resolver.toUrl(absId);
+
+					// add any dependencies
+					url = resolver.toUrl(absId);
 					moduleSource = this.fetcher.fetch(url);
 					moduleIds = this.parse(moduleSource, absId, config);
+
+					// finally, add module itself
+					moduleIds = moduleIds.concat([{
+						moduleId: absId,
+						absId: absId,
+						parentId: parentId
+					}]);
+
 				}
+
 			}
 
-			return moduleIds.concat([{
-				moduleId: moduleId,
-				parentId: parentId
-			}]);
+			return moduleIds;
 		},
 
 		parse: function parse (source, parentId, config) {
@@ -100,9 +155,11 @@
 		},
 
 		analyzePluginResource: function (absId, resource, parentId, config) {
-			var resolver, loader, module, deps, api;
+			var resolver, loader, module, deps, api, self;
 
 			deps = [];
+
+			self = this;
 
 			// get plugin module
 			loader = this.loader;
@@ -126,7 +183,7 @@
 					toAbsMid: function (id) { return resolver.toAbsMid(id); }
 				};
 				module.analyze(resource, api, function (resourceId) {
-					deps = deps.concat(this.analyze(resourceId, parentId, config));
+					deps = deps.concat(self.analyze(resourceId, parentId, config));
 				});
 			}
 			
