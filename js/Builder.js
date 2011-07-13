@@ -62,17 +62,13 @@
 		},
 
 		buildPluginResource: function buildPluginResource (depId, absId, resolver, config) {
-			var pluginParts, absPluginId, module, write;
+			var self, pluginParts, absPluginId, module, write, api;
 
-			// resolve to absolute path
-//			depId = resolver.toAbsPluginResourceId(depId);
+			self = this;
 
 			// get parts
 			pluginParts = resolver.parsePluginResourceId(depId);
 			absPluginId = resolver.toAbsPluginId(pluginParts.pluginId);
-
-//			// write out plugin module
-//			this.buildPluginModule(pluginParts.pluginId, resolver);
 
 			if (this.isAlreadyProcessed(depId)) return;
 			this.processed[depId] = true;
@@ -87,8 +83,16 @@
 				// execute plugin's build operation by giving it the writer, etc
 				write = module.build(this.writer, this.fetcher, config);
 
+				// create the api it needs (api looks like require() function)
+				api = function (moduleId) {
+					return self.loader.load(moduleId);
+				};
+				api.load = api;
+				api.toUrl = function (moduleId) { return resolver.toUrl(moduleId) };
+				api.toAbsMid = function (moduleId) { return resolver.toAbsMid(moduleId) };
+
 				// and calling its returned write method
-				write(pluginParts.pluginId, pluginParts.resource, resolver);
+				write(pluginParts.pluginId, pluginParts.resource, api);
 
 			}
 			else {
@@ -101,19 +105,6 @@
 
 			}
 		},
-
-//		buildPluginModule: function buildPluginModule (moduleId, absId, resolver) {
-//			var url, source;
-//print(moduleId, absId, this.isAlreadyProcessed(absId));
-//			if (this.isAlreadyProcessed(absId)) return;
-//			this.processed[absId] = true;
-//
-//			url = resolver.toUrl(absId);
-//print('buildPluginModule', moduleId, absId, url);
-//			source = this.insertModuleId(moduleId, this.fetcher(url));
-//			this.writer(source);
-//
-//		},
 
 		buildAmdModule: function buildAmdModule (moduleId, absId, resolver) {
 			var url, source;
