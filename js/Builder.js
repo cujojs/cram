@@ -62,16 +62,17 @@
 		},
 
 		buildPluginResource: function buildPluginResource (depId, absId, resolver, config) {
-			var self, pluginParts, absPluginId, module, write, api;
+			var self, pluginParts, absId, absPluginId, module, write, api;
 
 			self = this;
 
 			// get parts
 			pluginParts = resolver.parsePluginResourceId(depId);
+			absId = resolver.toAbsPluginResourceId(depId);
 			absPluginId = resolver.toAbsPluginId(pluginParts.pluginId);
 
-			if (this.isAlreadyProcessed(depId)) return;
-			this.processed[depId] = true;
+			if (this.isAlreadyProcessed(absId)) return;
+			this.processed[absId] = true;
 
 			// get plugin module
 			this.loader.resolver = resolver;
