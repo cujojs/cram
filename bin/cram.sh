@@ -5,7 +5,7 @@ ME=`basename $0`
 BINDIR=`dirname $0`
 BINDIR=${BINDIR:-.}
 JSDIR="$BINDIR"/../js
-TMPDIR=$(mktemp -t cram -d)
+TMPDIR=$(mktemp -t cram.XXXXXX -d)
 
 # Testing only
 # TMPDIR=/tmp
@@ -24,7 +24,7 @@ JSENGINEOPTS="-O -1"
 export JSENGINE JSENGINEOPTS
 
 # optimization for jsrun.sh
-JSTMP=$(mktemp -t cram)
+JSTMP=$(mktemp -t cram.XXXXXX)
 export JSTMP
 
 USAGE="$ME [-e|--engine path_to_js_engine] [-o|--output build_output_file] -r|--root root_module_id -c|--config config_file"
@@ -95,6 +95,7 @@ fi
 ENGINECAPS=$("$JSENGINE" "$JSDIR/jsEngineCaps.js")
 
 echo "js engine: $JSENGINE $JSENGINEOPTS ($ENGINECAPS)"
+echo "temp folder: $TMPDIR"
 
 if [[ ! "$ENGINECAPS" =~ hasJson=true  ]]; then
 	#rhino 1.7r2  needs this, jsc and rhino 1.7r3 do not
@@ -120,6 +121,7 @@ JSCMD="print(JSON.stringify(analyze(\"$ROOTID\", \"\", $CONFIG)));"
 "$JSRUN" "$JSCMD" "$FETCHER" "$RESOLVER" "$LOADER" "$JSON" "$ANALYZER" "$ANALYZE" > "$MODULEINFO"
 
 # echo "found modules $MODULEINFO"
+# cat "$MODULEINFO"
 
 # we're ready to build!
 
