@@ -81,7 +81,7 @@
 			if (typeof module.build == 'function') {
 
 				// execute plugin's build operation by giving it the writer, etc
-				write = module.build(this.writer, this.fetcher, config);
+				write = module.build(this.writer, this.fetcher, this.getPluginConfig(config));
 
 				// create the api it needs (api looks like require() function)
 				api = function (moduleId) {
@@ -125,6 +125,10 @@
 			return source.replace(insertModuleIdRx, function (m, prefix, suffix) {
 				return prefix + '"' + moduleId + '", ' + suffix;
 			});
+		},
+
+		getPluginConfig: function (pluginName, config) {
+			return config && config.plugins && config.plugins[pluginName] || {};
 		},
 
 		toString: function toString () {
