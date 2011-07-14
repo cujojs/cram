@@ -21,7 +21,7 @@
 "use strict";
 
 	// regexes
-	var removeCommentsRx, findDefineRx, cleanDepsRx, seen;
+	var removeCommentsRx, findDefineRx, cleanDepsRx, seen, ignores;
 
 	// TODO: this was an easy regexp to create, but find a more performant one?
 	removeCommentsRx = /\/\*[\s\S]*?\*\/|\/\/.*?\n/g;
@@ -29,12 +29,19 @@
 	// regex to find dependency lists courtesy of Brian Cavalier @briancavalier
 	findDefineRx = /define\s*\((\s*[^,]*,)?\s*\[([^\]]+)\]\s*,/mg;
 
-	// removes commas and quotes
-	cleanDepsRx = /["']+\s*([^"']+)/g;
+	// regex to remove commas and quotes and separate moduleIds
+	cleanDepsRx = /["']+\s*([^"']+)["']+/g;
 	
 	// It's probably too aggressive to put this so high up in the scope, but
 	// for now, it'll do since we always start up a new VM for each build.
 	seen = {};
+
+	// these modules -- or pseudo-modules -- will never be recorded
+	ignores = {
+		'require': true,
+		'exports': true,
+		'module': true
+	};
 
 	// analyzer constructor
 	function Analyzer () {}
@@ -59,7 +66,10 @@
 			resolver = new this.Resolver(parentId, config);
 			moduleIds = [];
 
-			if (resolver.isPluginResource(moduleId)) {
+			if (moduleId in ignores) {
+				// do nothing
+			}
+			else if (resolver.isPluginResource(moduleId)) {
 
 				pluginParts = resolver.parsePluginResourceId(moduleId);
 				absPluginId = resolver.toAbsPluginId(pluginParts.pluginId);
@@ -85,7 +95,11 @@
 					}
 
 					// get any special resources/modules from the plugin
-					moduleIds = moduleIds.concat(this.analyzePluginResource(absPluginId, resource, parentId, config));
+					moduleIds = moduleIds.concat(
+						this.analyzePluginResource(
+							pluginParts.pluginId, absPluginId, resource, parentId, config
+						)
+					);
 
 					// finally add the plugin resource itself (e.g. text!./some/template.html)
 					moduleIds = moduleIds.concat([{
@@ -124,7 +138,7 @@
 			return moduleIds;
 		},
 
-		parse: function parse (source, parentId, config) {
+		parse: function parse (source, moduleId, config) {
 			// collect dependencies found
 			var self, deps;
 
@@ -140,7 +154,7 @@
 				if (depsList) {
 					// extract the ids
 					self.scan(depsList, cleanDepsRx, function (match, depId) {
-						deps = deps.concat(self.analyze(depId, parentId, config));
+						deps = deps.concat(self.analyze(depId, moduleId, config));
 					});
 				}
 
@@ -154,8 +168,8 @@
 			str.replace(rx, lambda);
 		},
 
-		analyzePluginResource: function (absId, resource, parentId, config) {
-			var resolver, loader, module, deps, api, self;
+		analyzePluginResource: function (pluginId, absId, resource, parentId, config) {
+			var resolver, loader, module, deps, api, self, pcfg;
 
 			deps = [];
 
@@ -172,6 +186,8 @@
 				return deps;
 			}
 
+			// plugin's loader.resolver is relative to the plugin (useful for
+			// loading plugin's shared/common modules)
 			resolver = new this.Resolver(parentId, config);
 			loader.resolver = resolver;
 
@@ -184,10 +200,14 @@
 				};
 				module.analyze(resource, api, function (resourceId) {
 					deps = deps.concat(self.analyze(resourceId, parentId, config));
-				});
+				}, this.getPluginConfig(pluginId, config));
 			}
 			
 			return deps;
+		},
+
+		getPluginConfig: function (pluginName, config) {
+			return config && config.plugins && config.plugins[pluginName] || {};
 		},
 
 		toString: function toString () {
