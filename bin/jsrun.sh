@@ -1,7 +1,7 @@
 #!/bin/bash
 # rhino seems to force us to use -e arg or load files, s we're forced to write to a temp file:
 # if [ "$JSTMP" == "" ]; then
-	JSTMP=$(mktemp -t cram)
+	JSTMP=$(mktemp -t cram.XXXXXX)
 # fi
 
 # save javascript to execute
