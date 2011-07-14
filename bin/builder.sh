@@ -34,6 +34,9 @@ mkdir -p "$OUTPUT_DIR"
 
 TMP_BUILD_DEST="$TMPDIR/$OUTPUT_FILE"
 
+# truncate dest file
+cat /dev/null > "$TMP_BUILD_DEST"
+
 # execute it
 # NOTE: No first param, because we already have the build() in the
 # $JSFILE.  Trying to put the build() call as text on the command line here
