@@ -1,8 +1,5 @@
-(function (global) {
+define(function () {
 "use strict";
-
-	// singleton
-	var writer;
 
 	// output collectors
 	var outputs = {};
@@ -43,7 +40,7 @@
 		delete outputs[optChannelId];
 	}
 
-	global.writer = writer = {
+	return {
 		getWriter: getWriter,
 		getOutput: getOutput,
 		clearOutput: clearOutput,
@@ -52,4 +49,4 @@
 		}
 	};
 
-}(this));
+});

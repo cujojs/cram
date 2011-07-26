@@ -1,4 +1,4 @@
-(function (global) {
+define(function () {
 "use strict";
 
 	var insertModuleIdRx = /(define\s*\()([^"'])/g;
@@ -138,6 +138,6 @@
 
 	};
 
-	global.Builder = Builder;
+	return Builder;
 
-}(this));
+});

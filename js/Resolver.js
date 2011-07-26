@@ -1,4 +1,4 @@
-(function (global) {
+define(function () {
 "use strict";
 
 	// constructor
@@ -215,6 +215,6 @@
 		return descriptor;
 	}
 
-	global.Resolver = Resolver;
+	return Resolver;
 
-}(this));
+});

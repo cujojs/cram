@@ -1,14 +1,16 @@
-(function (global) {
+var readFile;
+define(function () {
+"use strict";
 
 	function fetch (resourceUrl) {
-		return global.readFile(resourceUrl);
+		return readFile(resourceUrl);
 	}
 
-	global.fetcher = {
+	return {
 		fetch: fetch,
 		toString: function toString () {
 			return '[object readFileFetcher]';
 		}
 	};
 
-}(this));
+});

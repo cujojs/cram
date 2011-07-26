@@ -1,9 +1,6 @@
-(function (global) {
+define(function () {
 "use strict";
 	
-	// singleton
-	var fetcher;
-
 	// cache of resources
 	var cache = {};
 
@@ -26,7 +23,7 @@
 		}).join(',');
 	}
 
-	global.fetcher = fetcher = {
+	return {
 		fetch: fetch,
 		store: store,
 		extractUrls: extractUrls,
@@ -35,4 +32,4 @@
 		}
 	};
 
-}(this));
+});

@@ -17,7 +17,7 @@
 
 */
 
-(function (global) {
+define(function () {
 "use strict";
 
 	// regexes
@@ -216,9 +216,9 @@
 
 	};
 
-	global.Analyzer = Analyzer;
+	return Analyzer;
 
-}(this));
+});
 
 /*
 
