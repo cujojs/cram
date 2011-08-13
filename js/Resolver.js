@@ -124,6 +124,7 @@ define(function () {
 	}
 
 	function joinPath (path, file) {
+		// TODO: remove this function. instead, add slash to all paths in advance
 		return (!path || endsWithSlash(path) ? path : path + '/') + file;
 	}
 
@@ -194,23 +195,40 @@ define(function () {
 
 	}
 
-	function normalizePkgDescriptor (descriptor, name) {
-		var lib, main;
+	function normalizePkgDescriptor (descriptor, nameOrIndex) {
+		// TODO: remove nameOrIndex param
+		// we need to use strings for prop names to account for google closure
 
 		// check for string shortcuts
 		if (isType(descriptor, 'String')) {
+			descriptor = removeEndSlash(descriptor);
 			// fill in defaults
 			descriptor = {
-				'path': removeEndSlash(descriptor),
+				name: descriptor,
+				'path': descriptor,
 				'main': defaultDescriptor.main,
 				'lib': defaultDescriptor.lib
 			};
 		}
 
-		// we need to do this with brackets to account for google closure
-		descriptor.path = descriptor['path'] || (isNaN(name) ? name : descriptor.name);
-		descriptor.lib = 'lib' in descriptor && removeEndSlash(normalizeName(descriptor['lib'], descriptor.path));
-		descriptor.main = 'main' in descriptor && removeEndSlash(normalizeName(descriptor['main'], descriptor.path));
+		descriptor.path = descriptor['path'] || ''; // (isNaN(nameOrIndex) ? nameOrIndex : descriptor.name);
+
+		function normalizePkgPart (partName) {
+			var path;
+			if (partName in descriptor) {
+				if (descriptor[partName].charAt(0) != '.') {
+					// prefix with path
+					path = joinPath(descriptor.path, descriptor[partName]);
+				}
+				else {
+					// use normal . and .. path processing
+					path = normalizeName(descriptor[partName], descriptor.path);
+				}
+				return removeEndSlash(path);
+			}
+		}
+		descriptor.lib = normalizePkgPart('lib');
+		descriptor.main = normalizePkgPart('main');
 
 		return descriptor;
 	}
