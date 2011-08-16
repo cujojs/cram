@@ -2,14 +2,23 @@ var java;
 define(function () {
 "use strict";
 
+	var files, writers;
+
+	files = {};
+	writers = {};
+
 	function write (text, optChannelId) {
-		// this isn't very efficient, but works for now
 		var file, writer;
 		optChannelId = optChannelId || 'default.js';
-		file = java.io.File(optChannelId);
-		writer = java.io.FileWriter(file, true);
+		file = files[optChannelId];
+		if (!file) {
+			file = files[optChannelId] = java.io.File(optChannelId);
+		}
+		writer = writers[optChannelId];
+		if (!writer) {
+			writer = writers[optChannelId] = java.io.FileWriter(file, false);
+		}
 		writer.write(text);
-		writer.close();
 	}
 
 	function getWriter (optChannelId) {
@@ -19,11 +28,22 @@ define(function () {
 		}
 	}
 
+	function closeWriter (optChannelId) {
+		var writer;
+		writer = writers[optChannelId];
+		if (writer) {
+			writer.close();
+		}
+	}
+
+	function closeAll () {
+		for (var p in writers) closeWriter(p);
+	}
+
 	return {
 		getWriter: getWriter,
-		toString: function toString () {
-			return '[object javaFileWriter]';
-		}
+		closeWriter: closeWriter,
+		closeAll: closeAll
 	};
 
 
