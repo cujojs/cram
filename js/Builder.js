@@ -50,7 +50,7 @@ define(function () {
 					this.buildPluginResource(moduleId, absId, resolver, config);
 				}
 				else {
-					this.buildAmdModule(moduleId, absId, resolver);
+					this.buildAmdModule(moduleId, absId, resolver, config);
 				}
 
 			}, this);
@@ -107,7 +107,7 @@ define(function () {
 			}
 		},
 
-		buildAmdModule: function buildAmdModule (moduleId, absId, resolver) {
+		buildAmdModule: function buildAmdModule (moduleId, absId, resolver, config) {
 			var url, source;
 
 			url = resolver.toUrl(absId);
@@ -115,7 +115,13 @@ define(function () {
 			if (this.isAlreadyProcessed(absId)) return;
 			this.processed[absId] = true;
 
-			source = this.insertModuleId(moduleId, this.fetcher(url));
+			source = this.fetcher(url);
+
+			// keep the root module anonymous so it can be relocated
+			if (config.rootModule != moduleId) {
+				source = this.insertModuleId(moduleId, source);
+			}
+
 			this.writer(source);
 
 		},
