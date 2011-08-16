@@ -43,10 +43,7 @@ define(function () {
 	return {
 		getWriter: getWriter,
 		getOutput: getOutput,
-		clearOutput: clearOutput,
-		toString: function toString () {
-			return '[object writer]';
-		}
+		clearOutput: clearOutput
 	};
 
 });
