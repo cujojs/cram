@@ -107,7 +107,7 @@ define(function () {
 		absUrlRx = /^\/|^[^:]*:\/\//,
 		normalizeRx = /^\.(\/|$)/,
 		findSlashRx = /\//,
-		hasExtRx = /\.\w+$/,
+		hasExtRx = /\.\w+($|[?#])/,
 		toString = ({}).toString,
 		// the defaults for a typical package descriptor
 		defaultDescriptor = {
