@@ -1,4 +1,5 @@
 #!/bin/bash
+# cram version 0.2
 # starts the optimizer
 
 ME=`basename $0`
