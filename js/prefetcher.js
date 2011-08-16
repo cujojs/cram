@@ -15,6 +15,10 @@ define(function () {
 		cache[resourceUrl] = text;
 	}
 
+	function setCache (newCache) {
+		cache = newCache;
+	}
+
 	// extracts all url info from a list of module info returned
 	// by the Resolver
 	function extractUrls (moduleInfo, resolver) {
@@ -26,6 +30,7 @@ define(function () {
 	return {
 		fetch: fetch,
 		store: store,
+		setCache: setCache,
 		extractUrls: extractUrls,
 		toString: function toString () {
 			return '[object prefetcher]';
