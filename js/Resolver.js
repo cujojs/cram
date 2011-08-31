@@ -104,7 +104,7 @@ define(function () {
 	/* the following functions and regexes copied from curl.js */
 
 	var
-		absUrlRx = /^\/|^[^:]*:\/\//,
+		absUrlRx = /^\/|^[^:]+:\/\//,
 		normalizeRx = /^\.(\/|$)/,
 		findSlashRx = /\//,
 		hasExtRx = /\.\w+($|[?#])/,
