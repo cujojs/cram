@@ -93,13 +93,13 @@ define("text", /*=='text',==*/ function () {
 				absId = resolver['toAbsMid'](resource);
 				if (!(absId in built)) {
 					built[absId] = true;
-				// fetch text
-				text = jsEncode(fetcher(url));
-				// write out a define
-				output = 'define("' + pluginId + '!' + absId + '", function () {\n' +
-					'\treturn "' + text + '";\n' +
-				'});\n';
-				writer(output);
+					// fetch text
+					text = jsEncode(fetcher(url));
+					// write out a define
+					output = 'define("' + pluginId + '!' + absId + '", function () {\n' +
+						'\treturn "' + text + '";\n' +
+					'});\n';
+					writer(output);
 				}
 			};
 		}
@@ -463,11 +463,26 @@ define("text!js/templates/snippet.html", function () {
 
 /***** finally! the actual plugin *****/
 
-	define("css", {
+	define("css", /*=='css',==*/ {
+
+		'normalize': function (resourceId, toAbsId) {
+			var resources, normalized;
+
+			if (!resourceId) return resourceId;
+
+			resources = resourceId.split(",");
+			normalized = [];
+
+			for (var i = 0, len = resources.length; i < len; i++) {
+				normalized.push(toAbsId(resources[i]));
+			}
+
+			return normalized.join(',');
+		},
 
 		'load': function (resourceId, require, callback, config) {
-				var resources = (resourceId || '').split(","),
-					loadingCount = resources.length;
+			var resources = (resourceId || '').split(","),
+				loadingCount = resources.length;
 
 			// all detector functions must ensure that this function only gets
 			// called once per stylesheet!

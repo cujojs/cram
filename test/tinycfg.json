@@ -1,7 +1,7 @@
 {
 
 	"baseUrl": "",
-	"destFile": "test/output/built.js",
+	"destUrl": "test/output/built.js",
 	"paths": {
 		"js": "test",
 		"curl": "../curl/src/curl"

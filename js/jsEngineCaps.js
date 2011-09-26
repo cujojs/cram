@@ -1,3 +1,5 @@
+var java, readFile, JSON; // stop the syntax checker / linter from complaining
+var environment; // TODO: move to a java-specific file
 (function (global) {
 "use strict";
 
@@ -5,10 +7,11 @@
 
 		var features = {};
 
-		features.readFile = typeof global.readFile == 'function';
-		features.json = typeof global.JSON != 'undefined';
-		features.java = typeof global.java != 'undefined';
-		// ({}).toString.call(global.java) == '[object JavaPackage]';
+		// preload some feature tests
+		features.readFile = typeof readFile == 'function';
+		features.json = typeof JSON != 'undefined';
+		features.java = typeof java != 'undefined';
+		// features.java = ({}).toString.call(global.java) == '[object JavaPackage]';
 
 		function has (feature) {
 			return features[feature];

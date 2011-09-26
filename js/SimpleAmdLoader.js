@@ -1,4 +1,5 @@
-(function (global) {
+var define;
+(function (global, globalDefine) {
 "use strict";
 
 	var cache, currentlyLoadingModuleId;
@@ -27,37 +28,48 @@
 
 	};
 
-	global.Loader = SimpleAmdLoader;
+	// if the global define isn't AMD, we will replace it.
+	// but first, let's return our module to it.
+	if (globalDefine) {
+		globalDefine(function () { return SimpleAmdLoader; });
+	}
+	else {
+		global.Loader = SimpleAmdLoader;
+	}
 
-	// mock define
-	global.define = function () {
-		// TODO: allow commonjs and node.js module definition (e.g. exports.module)
-		var defFunc, module;
+	// declare a simple AMD define if one isn't already available
+	if (!globalDefine || !globalDefine.amd) {
+		global.define = function () {
+			// TODO: allow commonjs and node.js module definition (e.g. exports.module)
+			var defFunc, module;
 
-		defFunc = arguments[arguments.length - 1];
-		if (arguments.length > 1) {
-			// TODO: load dependencies
-		}
+			defFunc = arguments[arguments.length - 1];
+			if (arguments.length > 1) {
+				// TODO: load dependencies
+			}
 
-		if (typeof defFunc == 'function') {
-			// TODO: inject dependencies
-			module = defFunc();
-		}
-		else {
-			module = defFunc;
-		}
+			if (typeof defFunc == 'function') {
+				// TODO: inject dependencies
+				module = defFunc();
+			}
+			else {
+				module = defFunc;
+			}
 
-		// be sure we're catching the correct define(), a file could have
-		// several, but only one can be anonymous.
-		if (arguments.length == 3 && arguments[0] != currentlyLoadingModuleId)  {
-			// some other named define() is in the file
-			cache[arguments[0]] = module;
-		}
-		else {
-			// this is the one we explicitly loaded
-			cache[currentlyLoadingModuleId] = module;
-		}
+			// be sure we're catching the correct define(), a file could have
+			// several, but only one can be anonymous.
+			if (arguments.length == 3 && arguments[0] != currentlyLoadingModuleId)  {
+				// some other named define() is in the file
+				cache[arguments[0]] = module;
+			}
+			else {
+				// this is the one we explicitly loaded
+				cache[currentlyLoadingModuleId] = module;
+			}
 
-	};
+		};
+	}
 
-}(this));
+	global.define.amd = {};
+
+}(this, define));
