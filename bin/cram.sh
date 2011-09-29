@@ -5,7 +5,7 @@
 echo "DO NOT USE THIS SHELL SCRIPT"
 echo "This script is for future use with JavaScriptCore"
 echo "To learn how to use cram, get help via the following command:"
-echo "java org.mozilla.javascript.tools.shell.Main"
+echo "java org.mozilla.javascript.tools.shell.Main <path to cram.js> --help"
 exit
 
 ME=`basename $0`
