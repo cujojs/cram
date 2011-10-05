@@ -1,7 +1,8 @@
 define(function () {
 "use strict";
 
-	var insertModuleIdRx = /(define\s*\()([^"'])/g;
+	var insertModuleIdRx = /(define\s*\()([^"'])/g,
+		endsWithSemiRx = /;\s*$/;
 
 	// constructor
 	function Builder () {}
@@ -120,6 +121,11 @@ define(function () {
 			// keep the root module anonymous so it can be relocated
 			if (config.rootModule != moduleId) {
 				source = this.insertModuleId(moduleId, source);
+			}
+
+			// check for trailing semicolon
+			if (!endsWithSemiRx.test(source)) {
+				source += ';';
 			}
 
 			this.writer(source);
