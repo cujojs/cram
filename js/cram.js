@@ -1,5 +1,5 @@
 /*
-	cram version 0.2
+	cram version 0.2.1dev
 	(c) copyright 2011 unscriptable.com / John M. Hann
 
 	Assumes the following are available in the environment:

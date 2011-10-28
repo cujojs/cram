@@ -191,6 +191,12 @@ define(function () {
 			resolver = new this.Resolver(parentId, config);
 			loader.resolver = resolver;
 
+			// check if plugin uses an external build module
+			if (module['plugin-builder']) {
+				// go get it
+				module = this.loader.load(module['plugin-builder']);
+			}
+
 			// ask plugin to look for more dependencies
 			if (typeof module.analyze == 'function') {				
 				api = {
