@@ -1,5 +1,8 @@
-function simpleRequire (absId) {
-	var module, simpleDefine;
+var define, simpleRequire;
+(function (globalDefine) {
+
+simpleRequire = function (absId) {
+	var module, simpleDefine, undefined;
 	// create a temporary define function that's sufficient to load a
 	// simplified AMD module. this define must run sync and can only
 	// have a definition function, not a module id or dependencies.
@@ -14,3 +17,5 @@ function simpleRequire (absId) {
 	}
 	return module;
 }
+
+}(define));
