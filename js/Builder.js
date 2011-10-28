@@ -63,13 +63,13 @@ define(function () {
 		},
 
 		buildPluginResource: function buildPluginResource (depId, absId, resolver, config) {
-			var self, pluginParts, absId, absPluginId, module, write, api;
+			var self, pluginParts, absPluginId, module, write, api;
 
 			self = this;
 
 			// get parts
 			pluginParts = resolver.parsePluginResourceId(depId);
-			absId = resolver.toAbsPluginResourceId(depId);
+			absId = absId || resolver.toAbsPluginResourceId(depId);
 			absPluginId = resolver.toAbsPluginId(pluginParts.pluginId);
 
 			if (this.isAlreadyProcessed(absId)) return;
@@ -78,6 +78,15 @@ define(function () {
 			// get plugin module
 			this.loader.resolver = resolver;
 			module = this.loader.load(absPluginId);
+
+			// check if plugin uses an external build module
+			if (module['plugin-builder']) {
+				// switch loader's context to plugin's (because plugin-builder
+				// module could be relative to plugin module)
+				this.loader.resolver = new this.Resolver(absPluginId, config);
+				// go get it
+				module = this.loader.load(module['plugin-builder']);
+			}
 
 			// write output
 			if (typeof module.build == 'function') {
@@ -100,7 +109,7 @@ define(function () {
 			else {
 
 				// this is a simple plugin that behaves the same in a build
-				// as out (e.g. it probably gets its resources via xhr or has
+				// as out (e.g. maybe it gets its resources via xhr or has
 				// nothing to load) so just write-out a call to load the
 				// resource using the plugin just like outside a build
 				this.buildAmdModule(depId, absId, resolver);
