@@ -8,11 +8,16 @@ define(function () {
 	writers = {};
 
 	function write (text, optChannelId) {
-		var file, writer;
+		var file, folder, writer;
 		optChannelId = optChannelId || 'default.js';
 		file = files[optChannelId];
 		if (!file) {
 			file = files[optChannelId] = java.io.File(optChannelId);
+			// ensure path exists
+			folder = file.getParentFile();
+			if (folder) { // could be null for some valid(?) reason
+				folder.mkdirs();
+			}
 		}
 		writer = writers[optChannelId];
 		if (!writer) {
