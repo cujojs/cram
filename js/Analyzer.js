@@ -193,8 +193,12 @@ define(function () {
 
 			// check if plugin uses an external build module
 			if (module['plugin-builder']) {
+				// swap loader for plugin-relative one
+				loader.resolver = new this.Resolver(absId, config);
 				// go get it
-				module = this.loader.load(module['plugin-builder']);
+				module = loader.load(module['plugin-builder']);
+				// restore resolver
+				loader.resolver = resolver;
 			}
 
 			// ask plugin to look for more dependencies
