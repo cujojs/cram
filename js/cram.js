@@ -85,7 +85,7 @@ var define; // we will create a temporary define()
 		if (!args.prefetchedFile) {
 
 			// analyze
-			moduleIds = analyze(config.rootModule, '', config);
+			moduleIds = analyze(config);
 
 			// if we can't fetch our own files
 			if (!has('readFile')) {
@@ -211,10 +211,15 @@ var define; // we will create a temporary define()
 		return module;
 	}
 
-	function analyze (moduleId, parentId, config) {
-		var resolver, analyzer, loader, moduleIds;
+	function analyze (config) {
+		var i, len, rootId, includes, excludes, resolver, analyzer, loader, moduleIds;
 
-		resolver = new Resolver(parentId, config);
+		rootId = config.rootModule;
+		moduleIds = [];
+		includes = config.includeFiles;
+		excludes = [];
+
+		resolver = new Resolver('', config);
 		analyzer = new Analyzer();
 		loader = new Loader();
 		analyzer.loader = loader;
@@ -222,23 +227,41 @@ var define; // we will create a temporary define()
 		analyzer.Resolver = Resolver;
 		analyzer.resolver = analyzer.loader.resolver = resolver;
 
-		moduleIds = [];
+		if (includes) {
+			analyzer.scanForIds = true;
+			for (i = 0, len = includes.length; i < len; i++) {
+				moduleIds.push({
+					moduleId: includes[i],
+					absId: includes[i]
+				});
+				excludes = excludes.concat(analyzer.analyze(includes[i], '', config));
+			}
+		}
+//print('excludes:', excludes.map(function (item) { return item.absId; }));
+		config._foundModules = excludes.map(function (info) { return info.absId; });
 
-		moduleIds = analyzer.analyze(moduleId, parentId, config);
+		analyzer.scanForIds = false;
+		moduleIds = moduleIds.concat(analyzer.analyze(rootId, '', config));
 
 		return moduleIds;
 
 	}
 
 	function build (moduleInfo, config) {
-		var builder;
+		var builder, excludes;
 
 		builder = new Builder();
 		builder.Resolver = Resolver;
 		builder.loader = new Loader();
 		builder.fetcher = fetcher.fetch;
 		builder.writer = writer.getWriter(config.destUrl);
-		
+
+		excludes = config.excludeModules || [];
+		if (config._foundModules) {
+			excludes = excludes.concat(config._foundModules);
+		}
+		builder.excludes = excludes;
+
 		builder.build(moduleInfo, config);
 
 	}
@@ -260,4 +283,3 @@ var define; // we will create a temporary define()
 // run from cram folder:
 // rhino -O -1 bin/../js/cram.js -c test/tinycfg.json -r js/tiny -b . -o test/output/built.js
 // java org.mozilla.javascript.tools.debugger.Main bin/../js/cram.js -c test/tinycfg.json -r js/tiny -b . -o test/output/built.js
-
