@@ -128,7 +128,7 @@ define(function () {
 			source = this.fetcher(url);
 
 			// keep the root module anonymous so it can be relocated
-			if (config.rootModule != moduleId) {
+			if (!config.anonymousRoot || config.rootModule != moduleId) {
 				source = this.insertModuleId(moduleId, source);
 			}
 
