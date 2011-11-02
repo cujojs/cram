@@ -21,13 +21,14 @@ define(function () {
 "use strict";
 
 	// regexes
-	var removeCommentsRx, findDefineRx, cleanDepsRx, seen, ignores;
+	var removeCommentsRx, findDepsRx, findIdsRx, cleanDepsRx, seen, ignores;
 
 	// TODO: this was an easy regexp to create, but find a more performant one?
-	removeCommentsRx = /\/\*[\s\S]*?\*\/|\/\/.*?\n/g;
+	removeCommentsRx = /\/\*[\s\S]*?\*\/|(?:[^\\])\/\/.*?[\n\r]/g;
 
 	// regex to find dependency lists courtesy of Brian Cavalier @briancavalier
-	findDefineRx = /define\s*\((\s*[^,]*,)?\s*\[([^\]]+)\]\s*,/mg;
+	findDepsRx = /define\s*\((\s*[^,]*\s*,)?\s*\[([^\]]+)\]\s*,/mg;
+	findIdsRx = /define\s*\(\s*["']([^"']+)["']\s*,/mg;
 
 	// regex to remove commas and quotes and separate moduleIds
 	cleanDepsRx = /["']+\s*([^"']+)["']+/g;
@@ -58,6 +59,10 @@ define(function () {
 
 		// fetcher is a text fetcher
 		fetcher: null,
+
+		// scanForIds is a boolean that indicates whether to scan for module
+		// ids rather than dependencies. true = ids.
+		scanForIds: false,
 		
 		analyze: function (moduleId, parentId, config) {
 			var resolver, absId, pluginParts, absPluginId,
@@ -83,7 +88,7 @@ define(function () {
 					// add plugin's module and any dependencies
 					if (!(pluginParts.pluginId in seen)) {
 
-						url = this.resolver.toUrl(absPluginId);
+						url = this.resolver.toPluginUrl(absPluginId);
 						moduleSource = this.fetcher.fetch(url);
 						moduleIds = moduleIds.concat(this.parse(moduleSource, absPluginId, config));
 
@@ -102,11 +107,13 @@ define(function () {
 					);
 
 					// finally add the plugin resource itself (e.g. text!./some/template.html)
-					moduleIds = moduleIds.concat([{
-						moduleId: moduleId,
-						absId: absId,
-						parentId: parentId
-					}]);
+					if (!this.scanForIds) {
+						moduleIds = moduleIds.concat([{
+							moduleId: moduleId,
+							absId: absId,
+							parentId: parentId
+						}]);
+					}
 
 				}
 
@@ -122,14 +129,18 @@ define(function () {
 					// add any dependencies
 					url = resolver.toUrl(absId);
 					moduleSource = this.fetcher.fetch(url);
+					if (!moduleSource) throw new Error('no module source found for ' + url);
+
 					moduleIds = this.parse(moduleSource, absId, config);
 
 					// finally, add module itself
-					moduleIds = moduleIds.concat([{
-						moduleId: absId,
-						absId: absId,
-						parentId: parentId
-					}]);
+					if (!this.scanForIds) {
+						moduleIds = moduleIds.concat([{
+							moduleId: absId,
+							absId: absId,
+							parentId: parentId
+						}]);
+					}
 
 				}
 
@@ -140,27 +151,33 @@ define(function () {
 
 		parse: function parse (source, moduleId, config) {
 			// collect dependencies found
-			var self, deps;
+			var self, ids;
 
 			self = this;
-			deps = [];
+			ids = [];
 
 			// remove those pesky comments
 			source = source.replace(removeCommentsRx, '');
 
 			// find any/all define()s
-			this.scan(source, findDefineRx, function (match, id, depsList) {
+			this.scan(source, this.scanForIds ? findIdsRx : findDepsRx, function (match, id, depsList) {
 
-				if (depsList) {
+				if (self.scanForIds) {
+					ids.push({
+						moduleId: id,
+						absId: id
+					});
+				}
+				else if (depsList) {
 					// extract the ids
 					self.scan(depsList, cleanDepsRx, function (match, depId) {
-						deps = deps.concat(self.analyze(depId, moduleId, config));
+						ids = ids.concat(self.analyze(depId, moduleId, config));
 					});
 				}
 
 			});
 
-			return deps;
+			return ids;
 		},
 
 		scan: function scan (str, rx, lambda) {
