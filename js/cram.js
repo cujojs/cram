@@ -212,7 +212,8 @@ var define; // we will create a temporary define()
 	}
 
 	function analyze (config) {
-		var i, len, rootId, includes, excludes, resolver, analyzer, loader, moduleIds;
+		var i, len, rootId, includes, excludes, resolver, analyzer,
+			loader, moduleIds;
 
 		rootId = config.rootModule;
 		moduleIds = [];
@@ -228,12 +229,10 @@ var define; // we will create a temporary define()
 		analyzer.resolver = analyzer.loader.resolver = resolver;
 
 		if (includes) {
-			analyzer.scanForIds = true;
 			for (i = 0, len = includes.length; i < len; i++) {
-				moduleIds.push({
-					moduleId: includes[i],
-					absId: includes[i]
-				});
+				analyzer.scanForIds = false;
+				moduleIds = moduleIds.concat(analyzer.analyze(includes[i], '', config));
+				analyzer.scanForIds = true;
 				excludes = excludes.concat(analyzer.analyze(includes[i], '', config));
 			}
 		}
