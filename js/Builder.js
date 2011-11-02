@@ -1,8 +1,9 @@
 define(function () {
 "use strict";
 
-	// TODO: remove global flag when we stop detecting define() in comments!
-	var insertModuleIdRx = /(define\s*\(\s*)([^"'\s])/g,
+	var
+		// state machine to find defines
+		insertModuleIdRx = /(define\s*\(\s*)([^"'\s])|(\/\*)|(\*\/)|(\/\/)|(\n|\r|$)/g,
 		endsWithSemiRx = /;\s*$/;
 
 	// constructor
@@ -143,11 +144,36 @@ define(function () {
 		},
 
 		insertModuleId: function insertModuleId (moduleId, source) {
-			// TODO: we need a better way to find the right define()
-			// if the user has a define("string resource"); will this fail?
-			return source.replace(insertModuleIdRx, function (m, prefix, suffix) {
-				return prefix + '"' + moduleId + '", ' + suffix;
-			});
+			// TODO: specify an option to only replace one define()?
+			var commentType = '';
+			return source.replace(insertModuleIdRx,
+				function (m, prefix, suffix, bcStart, bcEnd, lcStart, lcEnd) {
+					// if in a block comment
+					if (commentType == 'block') {
+						if (bcEnd) commentType = '';
+					}
+					// otherwise, if in a line comment
+					else if (commentType == 'line') {
+						if (lcEnd) commentType = '';
+					}
+					// otherwise (not in a comment)
+					else {
+						// if we're starting a block comment
+						if (bcStart) {
+							commentType = 'block';
+						}
+						// if we're starting a line comment
+						else if (lcStart) {
+							commentType = 'line';
+						}
+						// otherwise (yay! we hit a define() call!!!!)
+						else if (lcEnd == null && bcEnd == null) {
+							return prefix + '"' + moduleId + '", ' + suffix;
+						}
+					}
+					return m;
+				}
+			);
 		},
 
 		getPluginConfig: function (pluginName, config) {
