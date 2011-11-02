@@ -1,7 +1,8 @@
 define(function () {
 "use strict";
 
-	var insertModuleIdRx = /(define\s*\()([^"'])/g,
+	// TODO: remove global flag when we stop detecting define() in comments!
+	var insertModuleIdRx = /(define\s*\(\s*)([^"'\s])/g,
 		endsWithSemiRx = /;\s*$/;
 
 	// constructor
