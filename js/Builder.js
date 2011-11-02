@@ -3,11 +3,14 @@ define(function () {
 
 	var
 		// state machine to find defines
-		insertModuleIdRx = /(define\s*\(\s*)([^"'\s])|(\/\*)|(\*\/)|(\/\/)|(\n|\r|$)/g,
+		insertModuleIdRx = /(define\s*\(\s*)([^"'\s)])|(\/\*)|(\*\/)|([^\\]\/\/)|(\n|\r|$)|([^\\]')|([^\\]")/g,
 		endsWithSemiRx = /;\s*$/;
 
 	// constructor
-	function Builder () {}
+	function Builder () {
+		this.processed = {};
+		this.excludes = [];
+	}
 
 	Builder.prototype = {
 
@@ -37,7 +40,12 @@ define(function () {
 		// processed is a hashMap of the ids of the modules that were output
 		// to the built file already. if this is set to a non-empty map at
 		// the start of a build, it effectively becomes an "excludes list".
-		processed: {},
+		processed: null,
+
+		// excludes is a list of module ids not to build into output.
+		// this list could be derived from a list of pre-built files to be
+		// concatenated into the current file.
+		excludes: null,
 
 		build: function build (moduleList, config) {
 			var resolver, moduleId, absId;
@@ -47,7 +55,7 @@ define(function () {
 				moduleId = moduleInfo.moduleId;
 				absId = moduleInfo.absId;
 				resolver = new this.Resolver(moduleInfo.parentId || '', config);
-
+//print('build:', moduleId, absId);
 				// is this a plugin-based module/resource?
 				if (resolver.isPluginResource(moduleId)) {
 					this.buildPluginResource(moduleId, absId, resolver, config);
@@ -61,7 +69,7 @@ define(function () {
 		},
 
 		isAlreadyProcessed: function isAlreadyProcessed (moduleId) {
-			return !!this.processed[moduleId];
+			return !!this.processed[moduleId] || this.excludes.indexOf(moduleId) >= 0;
 		},
 
 		buildPluginResource: function buildPluginResource (depId, absId, resolver, config) {
@@ -75,6 +83,7 @@ define(function () {
 			absPluginId = resolver.toAbsPluginId(pluginParts.pluginId);
 
 			if (this.isAlreadyProcessed(absId)) return;
+
 			this.processed[absId] = true;
 
 			// get plugin module
@@ -114,7 +123,8 @@ define(function () {
 				// as out (e.g. maybe it gets its resources via xhr or has
 				// nothing to load) so just write-out a call to load the
 				// resource using the plugin just like outside a build
-				this.buildAmdModule(depId, absId, resolver);
+				// JMH 2011-11-02 removed. what the heck does this do???
+				//this.buildAmdModule(depId, absId, resolver);
 
 			}
 		},
@@ -125,9 +135,11 @@ define(function () {
 			url = resolver.toUrl(absId);
 
 			if (this.isAlreadyProcessed(absId)) return;
+
 			this.processed[absId] = true;
 
 			source = this.fetcher(url);
+			if (!source) throw new Error('could not find source for ' + url);
 
 			// keep the root module anonymous so it can be relocated
 			if (!config.anonymousRoot || config.rootModule != moduleId) {
@@ -144,10 +156,10 @@ define(function () {
 		},
 
 		insertModuleId: function insertModuleId (moduleId, source) {
-			// TODO: specify an option to strip comments before build to drastically increase performance
+			// TODO: specify an option to only replace one define()?
 			var commentType = '', found;
 			return source.replace(insertModuleIdRx,
-				function (m, prefix, suffix, bcStart, bcEnd, lcStart, lcEnd) {
+				function (m, prefix, suffix, bcStart, bcEnd, lcStart, lcEnd, q, qq) {
 					// if already inserted module id
 					if (found) {
 						// do nothing
@@ -160,6 +172,14 @@ define(function () {
 					else if (commentType == 'line') {
 						if (lcEnd) commentType = '';
 					}
+					// otherwise, if in a quoted string
+					else if (commentType == 'quoted') {
+						if (q) commentType = '';
+					}
+					// otherwise, if in a dbl-quoted string
+					else if (commentType == 'dbl-quoted') {
+						if (qq) commentType = '';
+					}
 					// otherwise (not in a comment)
 					else {
 						// if we're starting a block comment
@@ -169,6 +189,14 @@ define(function () {
 						// if we're starting a line comment
 						else if (lcStart) {
 							commentType = 'line';
+						}
+						// if we're starting a quoted string
+						else if (q) {
+							commentType = 'quoted';
+						}
+						// if we're starting a dbl-quoted string
+						else if (qq) {
+							commentType = 'dbl-quoted';
 						}
 						// otherwise (yay! we hit a define() call!!!!)
 						else if (lcEnd == null && bcEnd == null) {
