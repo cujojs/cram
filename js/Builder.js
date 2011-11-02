@@ -3,7 +3,7 @@ define(function () {
 
 	var
 		// state machine to find defines
-		insertModuleIdRx = /(define\s*\(\s*)([^"'\s)])|(\/\*)|(\*\/)|([^\\]\/\/)|(\n|\r|$)|([^\\]')|([^\\]")/g,
+		insertModuleIdRx = /(define\s*\(\s*)([^"'\s)])|(\/\*)|(\*\/)|((?:[^\\])\/\/)|(\n|\r|$)|((?:[^\\'])'(?:[^']))|((?:[^\\"])"(?:[^"]))/g,
 		endsWithSemiRx = /;\s*$/;
 
 	// constructor
@@ -55,10 +55,12 @@ define(function () {
 				moduleId = moduleInfo.moduleId;
 				absId = moduleInfo.absId;
 				resolver = new this.Resolver(moduleInfo.parentId || '', config);
-//print('build:', moduleId, absId);
 				// is this a plugin-based module/resource?
 				if (resolver.isPluginResource(moduleId)) {
 					this.buildPluginResource(moduleId, absId, resolver, config);
+				}
+				else if (moduleInfo.isPlugin) {
+					this.buildPluginModule(moduleId, absId, resolver, config);
 				}
 				else {
 					this.buildAmdModule(moduleId, absId, resolver, config);
@@ -137,6 +139,33 @@ define(function () {
 			if (this.isAlreadyProcessed(absId)) return;
 
 			this.processed[absId] = true;
+
+			source = this.fetcher(url);
+			if (!source) throw new Error('could not find source for ' + url);
+
+			// keep the root module anonymous so it can be relocated
+			if (!config.anonymousRoot || config.rootModule != moduleId) {
+				source = this.insertModuleId(moduleId, source);
+			}
+
+			// check for trailing semicolon
+			if (!endsWithSemiRx.test(source)) {
+				source += ';';
+			}
+
+			this.writer(source);
+
+		},
+
+		buildPluginModule: function buildAmdModule (moduleId, absId, resolver, config) {
+			// HACK! there has to be a better way
+			var url, source;
+
+			url = resolver.toUrl(absId);
+
+			if (this.isAlreadyProcessed(moduleId)) return;
+
+			this.processed[moduleId] = true;
 
 			source = this.fetcher(url);
 			if (!source) throw new Error('could not find source for ' + url);

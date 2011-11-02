@@ -94,7 +94,8 @@ define(function () {
 
 						moduleIds = moduleIds.concat([{
 							moduleId: pluginParts.pluginId,
-							absId: absPluginId
+							absId: absPluginId,
+							isPlugin: true // hack! accounts for pluginPath module id translation
 						}]);
 
 					}
