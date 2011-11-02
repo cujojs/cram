@@ -144,12 +144,16 @@ define(function () {
 		},
 
 		insertModuleId: function insertModuleId (moduleId, source) {
-			// TODO: specify an option to only replace one define()?
-			var commentType = '';
+			// TODO: specify an option to strip comments before build to drastically increase performance
+			var commentType = '', found;
 			return source.replace(insertModuleIdRx,
 				function (m, prefix, suffix, bcStart, bcEnd, lcStart, lcEnd) {
+					// if already inserted module id
+					if (found) {
+						// do nothing
+					}
 					// if in a block comment
-					if (commentType == 'block') {
+					else if (commentType == 'block') {
 						if (bcEnd) commentType = '';
 					}
 					// otherwise, if in a line comment
@@ -168,6 +172,7 @@ define(function () {
 						}
 						// otherwise (yay! we hit a define() call!!!!)
 						else if (lcEnd == null && bcEnd == null) {
+							found = true;
 							return prefix + '"' + moduleId + '", ' + suffix;
 						}
 					}
