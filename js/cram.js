@@ -217,7 +217,7 @@ var define; // we will create a temporary define()
 
 		rootId = config.rootModule;
 		moduleIds = [];
-		includes = config.includeFiles;
+		includes = config.preloads;
 		excludes = [];
 
 		resolver = new Resolver('', config);
