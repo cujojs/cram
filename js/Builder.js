@@ -2,6 +2,7 @@ define(function () {
 "use strict";
 
 	var
+		// TODO: add ability to find R-Value require() and insert deps so the def func isn't scanned at run-time
 		// state machine to find defines
 		insertModuleIdRx = /(define\s*\(\s*)([^"'\s)])|(\/\*)|(\*\/)|((?:[^\\])\/\/)|(\n|\r|$)|((?:[^\\'])'(?:[^']))|((?:[^\\"])"(?:[^"]))/g,
 		endsWithSemiRx = /;\s*$/;

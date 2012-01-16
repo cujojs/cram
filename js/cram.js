@@ -28,7 +28,6 @@ var define; // we will create a temporary define()
 			throw new Error('Cannot find cram source folder with this javascript engine. Use --src path_to_cram_js_folder.');
 		}
 
-
 		// load (and run) feature tests
 		// this declares has function
 		has = simpleRequire(joinPaths(cramFolder, 'jsEngineCaps'));
@@ -46,6 +45,32 @@ var define; // we will create a temporary define()
 		config.baseUrl = joinPaths(args.baseUrl, config.baseUrl || '');
 		config.destUrl = args.destUrl || config.destUrl || '';
 		config.rootModule = args.rootModule || config.rootModule;
+
+		// create path to curl if it wasn't provided
+		if (!config.paths) {
+			config.paths = {};
+		}
+		if (!config.paths.curl) {
+			config.paths.curl = joinPaths(cramFolder, 'support/curl');
+		}
+		if (!config.paths.cram) {
+			config.paths.cram = cramFolder;
+		}
+
+		// get cram modules
+		// TODO: we're assuming sync operation here. implement when() so
+		// we can operate in async environs such as browsers
+		simpleRequire(joinPaths(cramFolder, 'curlLoader'))(config);
+		loader = curl;
+		loader(['cram/Analyzer', 'cram/Builder'], function (A, B) {
+			Analyzer = A; Builder = B;
+		});
+		loader(has('java') ? 'cram/javaFileWriter' : 'cram/writer', function (w) {
+			writer = w;
+		});
+
+print('here');
+
 
 		// pull in a module loader so we can load modules.
 		// this file declares `define` and `Loader`
@@ -194,17 +219,20 @@ var define; // we will create a temporary define()
 		}
 	}
 
-	function simpleRequire (absId) {
+	function simpleRequire (url) {
 		var module, simpleDefine;
 		// create a temporary define function that's sufficient to load a
 		// simplified AMD module. this define must run sync and can only
 		// have a definition function, not a module id or dependencies.
 		if (!globalDefine) {
-			simpleDefine = define = function (definitionFunction) {
-				module = definitionFunction();
+			simpleDefine = define = function (id, definitionFunction) {
+				// allow for named modules, but not ones with deps
+				if (typeof id == 'function') definitionFunction = id;
+				// get first module declared (TODO: fix hackishness?)
+				if (!module) module = definitionFunction();
 			};
 		}
-		load(absId + '.js');
+		load(url + '.js');
 		if (simpleDefine == define) {
 			define = undefined;
 		}

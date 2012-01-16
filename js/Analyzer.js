@@ -27,6 +27,7 @@ define(function () {
 	removeCommentsRx = /\/\*[\s\S]*?\*\/|(?:[^\\])\/\/.*?[\n\r]/g;
 
 	// regex to find dependency lists courtesy of Brian Cavalier @briancavalier
+	// TODO: update this to match what Builder.js does (state machine)????
 	findDepsRx = /define\s*\((\s*[^,]*\s*,)?\s*\[([^\]]+)\]\s*,/mg;
 	findIdsRx = /define\s*\(\s*["']([^"']+)["']\s*,/mg;
 
