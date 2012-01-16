@@ -1,13 +1,15 @@
+/** @license MIT License (c) copyright B Cavalier & J Hann */
+
 /**
  * curl (cujo resource loader)
- *
- * (c) copyright 2010-2012 Brian Cavalier and John Hann
+ * An AMD-compliant javascript module loader.
  *
  * curl is part of the cujo.js family of libraries (http://cujojs.com/)
  *
  * Licensed under the MIT License at:
  * 		http://www.opensource.org/licenses/mit-license.php
  *
+ * @version 0.6
  */
 (function (global, doc, userCfg) {
 

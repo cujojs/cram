@@ -1,3 +1,13 @@
+/** MIT License (c) copyright B Cavalier & J Hann */
+
+/**
+ * lightwieght has() implementationfor cram
+ *
+ * Licensed under the MIT License at:
+ * 		http://www.opensource.org/licenses/mit-license.php
+ *
+ * @version 0.6
+ */
 var java, readFile, JSON; // stop the syntax checker / linter from complaining
 var environment; // TODO: move to a java-specific file
 (function (global) {

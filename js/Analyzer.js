@@ -1,3 +1,15 @@
+/** MIT License (c) copyright B Cavalier & J Hann */
+
+/**
+ * cram dependency analyzer
+ * finds module/resource dependencies in a file.
+ *
+ * Licensed under the MIT License at:
+ * 		http://www.opensource.org/licenses/mit-license.php
+ *
+ * @version 0.6
+ */
+
 /*
 	cram dependency analyzer
  	finds module/resource dependencies in a file.

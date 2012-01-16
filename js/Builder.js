@@ -1,3 +1,14 @@
+/** MIT License (c) copyright B Cavalier & J Hann */
+
+/**
+ * cram dependency builder
+ * writes dependencies to a file.
+ *
+ * Licensed under the MIT License at:
+ * 		http://www.opensource.org/licenses/mit-license.php
+ *
+ * @version 0.6
+ */
 define(function () {
 "use strict";
 

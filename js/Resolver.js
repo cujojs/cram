@@ -1,3 +1,14 @@
+/** MIT License (c) copyright B Cavalier & J Hann */
+
+/**
+ * module Resolver
+ *
+ * Licensed under the MIT License at:
+ * 		http://www.opensource.org/licenses/mit-license.php
+ *
+ * @version 0.6
+ * @deprecated
+ */
 define(function () {
 "use strict";
 

@@ -1,3 +1,14 @@
+/** MIT License (c) copyright B Cavalier & J Hann */
+
+/**
+ * file prefetcher for environments that can't load plain text files
+ * such as JavaScriptCore.
+ *
+ * Licensed under the MIT License at:
+ * 		http://www.opensource.org/licenses/mit-license.php
+ *
+ * @version 0.6
+ */
 define(function () {
 "use strict";
 	

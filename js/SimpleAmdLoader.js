@@ -1,3 +1,14 @@
+/** MIT License (c) copyright B Cavalier & J Hann */
+
+/**
+ * simple amd loader that only supports modules that use
+ * definition functions (factory functions) and no dependencies
+ *
+ * Licensed under the MIT License at:
+ * 		http://www.opensource.org/licenses/mit-license.php
+ *
+ * @version 0.6
+ */
 var define;
 (function (global, globalDefine) {
 "use strict";

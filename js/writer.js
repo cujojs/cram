@@ -1,3 +1,14 @@
+/** MIT License (c) copyright B Cavalier & J Hann */
+
+/**
+ * file writer for environments that don't support direct file output
+ * TODO: rename tis file to be more clear
+ *
+ * Licensed under the MIT License at:
+ * 		http://www.opensource.org/licenses/mit-license.php
+ *
+ * @version 0.6
+ */
 define(function () {
 "use strict";
 
