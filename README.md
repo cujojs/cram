@@ -12,7 +12,7 @@ submodule refs updated.  Remotes for clones can be updated by editing the url
 in your .git/config files.
 
 git://github.com/cujojs/cram.git
-https://unscriptable@github.com/cujojs/cram.git
+https://cujojs@github.com/cujojs/cram.git
 
 to use
 ---
