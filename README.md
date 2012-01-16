@@ -7,12 +7,14 @@ version 0.6
 
 Please Note: this project has moved from unscriptable/cram to cujojs/cram.
 Any existing forks have been automatically moved to cujojs/cram. However,
-your local clones and submodules will need to have their remote
-submodule refs updated.  Remotes for clones can be updated by editing the url
-in your .git/config files.
+you will need to update your clone and submodule remotes manually.
 
-git://github.com/cujojs/cram.git
-https://cujojs@github.com/cujojs/cram.git
+Update the url in your .git/config, and also .gitmodules for submodules:
+	git://github.com/cujojs/cram.git
+	https://cujojs@github.com/cujojs/cram.git
+
+Helpful link for updating submodules:
+[Git Submodules: Adding, Using, Removing, Updating](http://chrisjean.com/2009/04/20/git-submodules-adding-using-removing-and-updating/)
 
 to use
 ---
