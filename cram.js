@@ -17,10 +17,10 @@
 	print: function (...) { return undefined; }
 	quit: function () { return undefined; }
 	arguments: array-like object containing CLI arguments
-	
+
  */
 var load, print, quit; // prevent syntax checker / linter from complaining
-var define; // we will create a temporary define()
+var define, require, curl; // we will create a temporary define()
 (function (globalDefine, args) {
 "use strict";
 
@@ -28,6 +28,22 @@ var define; // we will create a temporary define()
 		Builder, config, moduleIds, cramFolder;
 
 	try {
+
+		// ensure we have a load method
+		if (!load) load = require; // require works well enough
+		if (!load) {
+			throw new Error('no load() or require() found in environment.');
+		}
+
+		if (!print) print = console && console.log.bind(console);
+		if (!print) {
+			throw new Error('no print() or console.log() found in environment.');
+		}
+
+		if (!quit) quit = process && process.exit.bind(process);
+		if (!quit) {
+			throw new Error('no quit() or process.exit() found in environment.');
+		}
 
 		// parse the arguments sent to this file
 		args = parseArgs(args);
@@ -39,8 +55,8 @@ var define; // we will create a temporary define()
 		}
 
 		// load (and run) feature tests
-		// this declares has function
-		has = simpleRequire(joinPaths(cramFolder, 'jsEngineCaps'));
+		// this declares has() function
+		has = simpleRequire(joinPaths(cramFolder, './lib/jsEngineCaps'));
 
 		// bail now if we can't load text files since we can't read a json config.
 		// shell script should convert the config to a .js file / AMD module
@@ -50,6 +66,12 @@ var define; // we will create a temporary define()
 			return;
 		}
 
+		// load appropriate modules according to the environment
+		if (!has('json')) {
+			// json2.js is not a module. it's plain old js so don't use loader
+			load(joinPaths(cramFolder, './lib/json2.js'));
+		}
+
 		// load configuration data
 		config = loadConfig(args.configFile);
 		config.baseUrl = joinPaths(args.baseUrl, config.baseUrl || '');
@@ -57,11 +79,12 @@ var define; // we will create a temporary define()
 		config.rootModule = args.rootModule || config.rootModule;
 
 		// create path to curl if it wasn't provided
+		// TODO: use packages here instead of paths
 		if (!config.paths) {
 			config.paths = {};
 		}
 		if (!config.paths.curl) {
-			config.paths.curl = joinPaths(cramFolder, 'support/curl');
+			config.paths.curl = joinPaths(cramFolder, './support/curl');
 		}
 		if (!config.paths.cram) {
 			config.paths.cram = cramFolder;
@@ -70,48 +93,43 @@ var define; // we will create a temporary define()
 		// get cram modules
 		// TODO: we're assuming sync operation here. implement when() so
 		// we can operate in async environs such as browsers
-		simpleRequire(joinPaths(cramFolder, 'curlLoader'))(config);
-		loader = curl;
-		loader(['cram/Analyzer', 'cram/Builder'], function (A, B) {
-			Analyzer = A; Builder = B;
-		});
-		loader(has('java') ? 'cram/javaFileWriter' : 'cram/writer', function (w) {
-			writer = w;
-		});
+		simpleRequire(joinPaths(cramFolder, './lib/curlLoader'));
 
-print('here');
-
-
-		// pull in a module loader so we can load modules.
-		// this file declares `define` and `Loader`
-		Loader = simpleRequire(joinPaths(cramFolder, 'SimpleAmdLoader'));
-		loader = new Loader();
-		// give it a stub resolver just to load modules in current folder
-		loader.resolver = {
-			toUrl: function (moduleId) { return joinPaths(cramFolder, moduleId + '.js'); }
-		};
-
-		// load appropriate modules according to the environment
-		if (!has('json')) {
-			// json2.js is not a module. it's plain old js so don't use loader
-			load(joinPaths(cramFolder, 'json2.js'));
+		// curl global should be available now
+		if (!curl) {
+			throw new Error('curl loader was not loaded.');
 		}
-		Resolver = loader.load('Resolver');
-		Analyzer = loader.load('Analyzer');
-		Builder = loader.load('Builder');
-		writer = loader.load(has('java') ? 'javaFileWriter' : 'writer');
-		if (has('readFile')) {
-			fetcher = loader.load('readFileFetcher');
-		}
-		else if (args.prefetchedFile) {
-			fetcher = loader.load('prefetcher');
+
+		// configure curl
+		curl(config);
+
+		curl(
+			[
+				has('java') ? 'cram/lib/javaFileWriter' : 'cram/lib/writer',
+				has('readFile') ? 'cram/lib/readFileFetcher' : 'cram/lib/prefetcher'
+			],
+			start,
+			fail
+		);
+
+	}
+	catch (ex) {
+		fail(ex);
+	}
+
+	return;
+
+	function start (writer, fetcher) {
+
+		try {
+		if (!has('readFile') && args.prefetchedFile) {
 			fetcher.setCache(args.prefetchedFile);
 		}
 		else {
 			// create a failFetcher! :)
 			fetcher = {
 				fetch: function () {
-					throw new Error('This javascript engine cannot analyze plugins!');
+					throw new Error('This javascript engine does not support plugins.');
 				}
 			}
 		}
@@ -120,7 +138,7 @@ print('here');
 		if (!args.prefetchedFile) {
 
 			// analyze
-			moduleIds = analyze(config);
+			// moduleIds = analyze(config);
 
 			// if we can't fetch our own files
 			if (!has('readFile')) {
@@ -131,8 +149,8 @@ print('here');
 			}
 		}
 
-		// build
-		build(moduleIds, config);
+		// TODO: continue build process here
+		// build(...);
 
 
 		if (writer.getOutput) {
@@ -146,12 +164,12 @@ print('here');
 			print('cram:success');
 		}
 
-	}
-	catch (ex) {
-		fail(ex);
-	}
+		}
+		catch (ex) {
+			fail(ex);
+		}
 
-	return;
+	}
 
 	function parseArgs (args) {
 		var optionMap, arg, option, result;
@@ -175,6 +193,7 @@ print('here');
 			baseUrl: '',
 			destUrl: ''
 		};
+		args = Array.prototype.slice.apply(args);
 		// pop off an arg and compare it to list of known option names
 		while ((arg = args.shift())) {
 			option = optionMap[arg];
@@ -190,6 +209,7 @@ print('here');
 	}
 
 	function joinPaths (path1, path2) {
+		if (path2.substr(0, 2) == './') path2 = path2.substr(2);
 		if (path1 && !path1.substr(path1.length - 1) != '/') {
 			path1 += '/';
 		}
@@ -207,15 +227,15 @@ print('here');
 			cfg = eval('(' + readFile(filename) + ')');
 		}
 		else {
-			// assume config is wrapped in an AMD `define()`
-			cfg = loader.load(filename.replace(/.js$/, ''));
+			// TODO: extract config from a text file using a regexp...
+			throw new Error('can\'t read config from a non-json file:' + filename);
 		}
 		return cfg;
 	}
 
 	function cramDir () {
 		var curdir, pos;
-		// find the folder with al of the js modules in it!
+		// find the folder with all of the js modules in it!
 		// we're sniffing for features here instead of in jsEngineCaps
 		// since this needs to run first so we can find jsEngineCaps!
 		// TODO: node.js and other environments
@@ -249,62 +269,63 @@ print('here');
 		return module;
 	}
 
-	function analyze (config) {
-		var i, len, rootId, includes, excludes, resolver, analyzer,
-			loader, moduleIds;
-
-		rootId = config.rootModule;
-		moduleIds = [];
-		includes = config.preloads;
-		excludes = [];
-
-		resolver = new Resolver('', config);
-		analyzer = new Analyzer();
-		loader = new Loader();
-		analyzer.loader = loader;
-		analyzer.fetcher = fetcher;
-		analyzer.Resolver = Resolver;
-		analyzer.resolver = analyzer.loader.resolver = resolver;
-
-		if (includes) {
-			for (i = 0, len = includes.length; i < len; i++) {
-				analyzer.scanForIds = false;
-				moduleIds = moduleIds.concat(analyzer.analyze(includes[i], '', config));
-				analyzer.scanForIds = true;
-				excludes = excludes.concat(analyzer.analyze(includes[i], '', config));
-			}
-		}
-//print('excludes:', excludes.map(function (item) { return item.absId; }));
-		config._foundModules = excludes.map(function (info) { return info.absId; });
-
-		analyzer.scanForIds = false;
-		moduleIds = moduleIds.concat(analyzer.analyze(rootId, '', config));
-
-		return moduleIds;
-
-	}
-
-	function build (moduleInfo, config) {
-		var builder, excludes;
-
-		builder = new Builder();
-		builder.Resolver = Resolver;
-		builder.loader = new Loader();
-		builder.fetcher = fetcher.fetch;
-		builder.writer = writer.getWriter(config.destUrl);
-
-		excludes = config.excludeModules || [];
-		if (config._foundModules) {
-			excludes = excludes.concat(config._foundModules);
-		}
-		builder.excludes = excludes;
-
-		builder.build(moduleInfo, config);
-
-	}
+//	function analyze (config) {
+//		var i, len, rootId, includes, excludes, resolver, analyzer,
+//			loader, moduleIds;
+//
+//		rootId = config.rootModule;
+//		moduleIds = [];
+//		includes = config.preloads;
+//		excludes = [];
+//
+//		resolver = new Resolver('', config);
+//		analyzer = new Analyzer();
+//		loader = new Loader();
+//		analyzer.loader = loader;
+//		analyzer.fetcher = fetcher;
+//		analyzer.Resolver = Resolver;
+//		analyzer.resolver = analyzer.loader.resolver = resolver;
+//
+//		if (includes) {
+//			for (i = 0, len = includes.length; i < len; i++) {
+//				analyzer.scanForIds = false;
+//				moduleIds = moduleIds.concat(analyzer.analyze(includes[i], '', config));
+//				analyzer.scanForIds = true;
+//				excludes = excludes.concat(analyzer.analyze(includes[i], '', config));
+//			}
+//		}
+////print('excludes:', excludes.map(function (item) { return item.absId; }));
+//		config._foundModules = excludes.map(function (info) { return info.absId; });
+//
+//		analyzer.scanForIds = false;
+//		moduleIds = moduleIds.concat(analyzer.analyze(rootId, '', config));
+//
+//		return moduleIds;
+//
+//	}
+//
+//	function build (moduleInfo, config) {
+//		var builder, excludes;
+//
+//		builder = new Builder();
+//		builder.Resolver = Resolver;
+//		builder.loader = new Loader();
+//		builder.fetcher = fetcher.fetch;
+//		builder.writer = writer.getWriter(config.destUrl);
+//
+//		excludes = config.excludeModules || [];
+//		if (config._foundModules) {
+//			excludes = excludes.concat(config._foundModules);
+//		}
+//		builder.excludes = excludes;
+//
+//		builder.build(moduleInfo, config);
+//
+//	}
 
 	function fail (ex) {
 		print('cram:fail', ex.message);
+		if (ex.stack) print(ex.stack);
 		quit();
 	}
 
@@ -315,7 +336,7 @@ print('here');
 		quit();
 	}
 
-}(define, arguments));
+}(define, process && process.argv ? process.argv.slice(2) : arguments));
 
 // run from cram folder:
 // rhino -O -1 bin/../js/cram.js -c test/tinycfg.json -r js/tiny -b . -o test/output/built.js
