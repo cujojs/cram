@@ -25,7 +25,7 @@ var define, require, curl; // we will create a temporary define()
 "use strict";
 
 	var loader, has, writer, fetcher, Loader, Resolver, Analyzer,
-		Builder, config, moduleIds, cramFolder;
+		Builder, config, moduleIds, cramFolder, undef;
 
 	try {
 
@@ -122,47 +122,49 @@ var define, require, curl; // we will create a temporary define()
 	function start (writer, fetcher) {
 
 		try {
-		if (!has('readFile') && args.prefetchedFile) {
-			fetcher.setCache(args.prefetchedFile);
-		}
-		else {
-			// create a failFetcher! :)
-			fetcher = {
-				fetch: function () {
-					throw new Error('This javascript engine does not support plugins.');
+			if (!has('readFile') && args.prefetchedFile) {
+				fetcher.setCache(args.prefetchedFile);
+			}
+			else {
+				// create a failFetcher! :)
+				fetcher = {
+					fetch: function () {
+						throw new Error('This javascript engine does not support plugins.');
+					}
 				}
 			}
-		}
 
-		// if we have a prefetched file, we've already analyzed
-		if (!args.prefetchedFile) {
+			// if we have a prefetched file, we've already analyzed
+			if (!args.prefetchedFile) {
 
-			// analyze
-			// moduleIds = analyze(config);
+				// analyze
+				// moduleIds = analyze(config);
 
-			// if we can't fetch our own files
-			if (!has('readFile')) {
-				// call back to the shell script to fetch files for us
-				print('cram:prefetch modules');
-				print(JSON.stringify(moduleIds));
-				return;
+				// if we can't fetch our own files
+				if (!has('readFile')) {
+					// call back to the shell script to fetch files for us
+					print('cram:prefetch modules');
+					print(JSON.stringify(moduleIds));
+					return;
+				}
 			}
-		}
 
-		// TODO: continue build process here
-		// build(...);
+			// TODO: continue build process here
+			// scan()
+			// compile()
+			// link()
 
 
-		if (writer.getOutput) {
-			//get output from writer(s) and print to caller
-			print(writer.getOutput());
-			// don't print?
-		}
-		else if (writer.closeAll) {
-			// clean up
-			writer.closeAll();
-			print('cram:success');
-		}
+			if (writer.getOutput) {
+				//get output from writer(s) and print to caller
+				print(writer.getOutput());
+				// don't print?
+			}
+			else if (writer.closeAll) {
+				// clean up
+				writer.closeAll();
+				print('cram:success');
+			}
 
 		}
 		catch (ex) {
@@ -171,6 +173,11 @@ var define, require, curl; // we will create a temporary define()
 
 	}
 
+	/**
+	 * Processes command-line arguments.
+	 * @param args {Array}
+	 * @return {Object}
+	 */
 	function parseArgs (args) {
 		var optionMap, arg, option, result;
 		optionMap = {
@@ -185,6 +192,7 @@ var define, require, curl; // we will create a temporary define()
 			'-s': 'cramFolder',
 			'--src': 'cramFolder',
 			'--prefetched': 'prefetchedFile',
+			'-?': 'help',
 			'-h': 'help',
 			'--help': 'help'
 		};
@@ -193,7 +201,7 @@ var define, require, curl; // we will create a temporary define()
 			baseUrl: '',
 			destUrl: ''
 		};
-		args = Array.prototype.slice.apply(args);
+		if (!args.length) help();
 		// pop off an arg and compare it to list of known option names
 		while ((arg = args.shift())) {
 			option = optionMap[arg];
@@ -201,7 +209,7 @@ var define, require, curl; // we will create a temporary define()
 				help();
 			}
 			else if (!option) {
-				throw new Error('unknown option: ', arg);
+				throw new Error('unknown option: ' + arg);
 			}
 			result[option] = args.shift(); // grab next arg
 		}
@@ -234,18 +242,19 @@ var define, require, curl; // we will create a temporary define()
 	}
 
 	function cramDir () {
-		var curdir, pos;
+		var cwd, curdir, pos;
 		// find the folder with all of the js modules in it!
 		// we're sniffing for features here instead of in jsEngineCaps
 		// since this needs to run first so we can find jsEngineCaps!
-		// TODO: node.js and other environments
-		if (typeof environment != 'undefined' &&
-				typeof environment['user.dir'] != 'undefined') {
-			curdir = environment['user.dir'];
-			pos = curdir.indexOf('/cram');
-			if (pos >= 0) {
-				return curdir.substring(0, pos + 5) + '/js';
-			}
+		curdir = typeof environment != 'undefined' && 'user.dir' in environment
+			? environment['user.dir']
+			: typeof process != 'undefined' && process.cwd && process.cwd();
+		if (curdir == undef) {
+			throw new Error('Could not determine current working directory.');
+		}
+		pos = curdir.indexOf('/cram');
+		if (pos >= 0) {
+			return curdir.substring(0, pos + 5) + '/js';
 		}
 	}
 
@@ -264,7 +273,7 @@ var define, require, curl; // we will create a temporary define()
 		}
 		load(url + '.js');
 		if (simpleDefine == define) {
-			define = undefined;
+			define = undef;
 		}
 		return module;
 	}
@@ -324,19 +333,28 @@ var define, require, curl; // we will create a temporary define()
 //	}
 
 	function fail (ex) {
-		print('cram:fail', ex.message);
-		if (ex.stack) print(ex.stack);
-		quit();
+		print('cram failed: ', ex && ex.message);
+		if (ex && ex.stack) print(ex.stack);
+		quit(1);
 	}
 
 	function help () {
-		var msg;
-		msg = "-c|--config config_file -r|--root root_module_id -b|--baseurl base_folder -s|--src path_to_cram_src_folder -o|--output build_output_file";
-		print(msg);
+		var options;
+		// TODO: auto-generate help string from config options and meta data
+		options = "\t-c, --config config_file\n\t-r, --root root_module_id\n\t-b, --baseurl base_folder\n\t-s, --src path_to_cram_src_folder\n\t-o, --output build_output_file";
+		print('cram, an AMD-compatible module concatenator. An element of the cujo.js suite.');
+		print();
+		print('Usage:');
+		print('\tnode cram.js options');
+		print();
+		print('Options:');
+		print(options);
+		print();
+		print('More help can be found at http://cujojs.com/');
 		quit();
 	}
 
-}(define, process && process.argv ? process.argv.slice(2) : arguments));
+}(define, process && process.argv ? process.argv.slice(2) : Array.prototype.slice.apply(arguments)));
 
 // run from cram folder:
 // rhino -O -1 bin/../js/cram.js -c test/tinycfg.json -r js/tiny -b . -o test/output/built.js
