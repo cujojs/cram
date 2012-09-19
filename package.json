@@ -1,0 +1,39 @@
+{
+	"name": "cram",
+	"version": "0.7.0",
+	"description": "An AMD-compatible build tool.",
+	"keywords": ["cram", "curl", "cujo", "amd", "build", "module"],
+	"licenses": [
+		{
+			"type": "MIT",
+			"url": "http://www.opensource.org/licenses/mit-license.php"
+		}
+	],
+	"repositories": [
+		{
+			"type": "git",
+			"url": "https://github.com/cujojs/cram"
+		}
+	],
+	"bugs": "https://github.com/cujojs/cram/issues",
+	"maintainers": [
+		{
+			"name": "John Hann",
+			"web": "http://unscriptable.com"
+		}
+	],
+	"contributors": [
+		{
+			"name": "John Hann",
+			"web": "http://unscriptable.com"
+		},
+		{
+			"name": "Brian Cavalier",
+			"web": "http://hovercraftstudios.com"
+		}
+	],
+	"main": "./cram",
+	"directories": {
+		"test": "test"
+	}
+}
