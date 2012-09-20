@@ -85,6 +85,7 @@ var define, require, curl; // we will create a temporary define()
 		}
 		if (!config.paths.curl) {
 			config.paths.curl = joinPaths(cramFolder, './support/curl');
+			config.paths.when = joinPaths(cramFolder, './support/when');
 		}
 		if (!config.paths.cram) {
 			config.paths.cram = cramFolder;
@@ -103,10 +104,14 @@ var define, require, curl; // we will create a temporary define()
 		// configure curl
 		curl(config);
 
+		// run!
 		curl(
 			[
+				'require',
+				// TODO: replace cram/lib/writer with node.js file writer
 				has('java') ? 'cram/lib/javaFileWriter' : 'cram/lib/writer',
-				has('readFile') ? 'cram/lib/readFileFetcher' : 'cram/lib/prefetcher'
+				// TODO: node.js file reader
+				has('readFile') ? 'cram/lib/readFileFetcher' : ''
 			],
 			start,
 			fail
@@ -119,40 +124,27 @@ var define, require, curl; // we will create a temporary define()
 
 	return;
 
-	function start (writer, fetcher) {
+	function start (require, writer, fetcher) {
 
 		try {
-			if (!has('readFile') && args.prefetchedFile) {
-				fetcher.setCache(args.prefetchedFile);
-			}
-			else {
-				// create a failFetcher! :)
-				fetcher = {
-					fetch: function () {
-						throw new Error('This javascript engine does not support plugins.');
-					}
-				}
-			}
-
-			// if we have a prefetched file, we've already analyzed
-			if (!args.prefetchedFile) {
-
-				// analyze
-				// moduleIds = analyze(config);
-
-				// if we can't fetch our own files
-				if (!has('readFile')) {
-					// call back to the shell script to fetch files for us
-					print('cram:prefetch modules');
-					print(JSON.stringify(moduleIds));
-					return;
-				}
-			}
 
 			// TODO: continue build process here
-			// scan()
-			// compile()
-			// link()
+
+			// normalize:
+			// load resource/module
+			// transform it to AMD, if necessary
+			// write to cache here
+
+			// scan:
+			// scan for dependencies, etc.
+			// cache AST here
+
+			// compile
+			// compile to optimized AMD (define/require mapping would happen here?)
+			// cache optimized file here
+
+			// link:
+			// link / concat modules
 
 
 			if (writer.getOutput) {
@@ -163,7 +155,6 @@ var define, require, curl; // we will create a temporary define()
 			else if (writer.closeAll) {
 				// clean up
 				writer.closeAll();
-				print('cram:success');
 			}
 
 		}
@@ -191,7 +182,6 @@ var define, require, curl; // we will create a temporary define()
 			'--output': 'destUrl',
 			'-s': 'cramFolder',
 			'--src': 'cramFolder',
-			'--prefetched': 'prefetchedFile',
 			'-?': 'help',
 			'-h': 'help',
 			'--help': 'help'
