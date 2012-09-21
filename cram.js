@@ -29,8 +29,11 @@ var define, require, curl; // we will create a temporary define()
 
 	try {
 
+		// TODO: stop normalizing to Rhino API. shim up to a modern API.
+		// TODO: ensure all load/require operations can be async
+
 		// ensure we have a load method
-		if (!load) load = require; // require works well enough
+		if (require) load = require; // require() is preferred when it's available
 		if (!load) {
 			throw new Error('no load() or require() found in environment.');
 		}
@@ -56,13 +59,13 @@ var define, require, curl; // we will create a temporary define()
 
 		// load (and run) feature tests
 		// this declares has() function
-		has = simpleRequire(joinPaths(cramFolder, './lib/jsEngineCaps'));
+		has = simpleRequire(joinPaths(cramFolder, './lib/has'));
 
 		// bail now if we can't load text files since we can't read a json config.
 		// shell script should convert the config to a .js file / AMD module
 		// and re-run this file
 		if (!has('readFile') && isJsonFile(args.configFile)) {
-			print('cram:wrap Configuration file must be wrapped in define with this javascript engine.');
+			print('Configuration file must be wrapped in define with this javascript engine.');
 			return;
 		}
 
@@ -109,9 +112,9 @@ var define, require, curl; // we will create a temporary define()
 			[
 				'require',
 				// TODO: replace cram/lib/writer with node.js file writer
-				has('java') ? 'cram/lib/javaFileWriter' : 'cram/lib/writer',
+				has('java') ? 'cram/lib/io/javaFileWriter' : 'cram/lib/writer',
 				// TODO: node.js file reader
-				has('readFile') ? 'cram/lib/readFileFetcher' : ''
+				has('readFile') ? 'cram/lib/io/readFileFileReader' : ''
 			],
 			start,
 			fail
@@ -234,8 +237,8 @@ var define, require, curl; // we will create a temporary define()
 	function cramDir () {
 		var cwd, curdir, pos;
 		// find the folder with all of the js modules in it!
-		// we're sniffing for features here instead of in jsEngineCaps
-		// since this needs to run first so we can find jsEngineCaps!
+		// we're sniffing for features here instead of in has.js
+		// since this needs to run first so we can find has.js!
 		curdir = typeof environment != 'undefined' && 'user.dir' in environment
 			? environment['user.dir']
 			: typeof process != 'undefined' && process.cwd && process.cwd();
