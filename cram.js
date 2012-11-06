@@ -82,15 +82,18 @@ var define, require, curl; // we will create a temporary define()
 		config.rootModule = args.rootModule || config.rootModule;
 
 		// create path to curl if it wasn't provided
-		// TODO: use packages here instead of paths
+		// TODO: use packages here instead of paths (to set an example?)
 		if (!config.paths) {
 			config.paths = {};
 		}
-		if (!config.paths.curl) {
+		if (!config.packages) {
+			config.packages = [];
+		}
+		if (!config.paths.curl && !config.packages.curl) {
 			config.paths.curl = joinPaths(cramFolder, './support/curl');
 			config.paths.when = joinPaths(cramFolder, './support/when');
 		}
-		if (!config.paths.cram) {
+		if (!config.paths.cram && ! config.packages.cram) {
 			config.paths.cram = cramFolder;
 		}
 
@@ -111,10 +114,8 @@ var define, require, curl; // we will create a temporary define()
 		curl(
 			[
 				'require',
-				// TODO: replace cram/lib/writer with node.js file writer
-				has('java') ? 'cram/lib/io/javaFileWriter' : 'cram/lib/writer',
-				// TODO: node.js file reader
-				has('readFile') ? 'cram/lib/io/readFileFileReader' : ''
+				has('java') ? 'cram/lib/io/javaFileWriter' : 'cram/lib/nodeFileWriter',
+				has('readFile') ? 'cram/lib/io/readFileFileReader' : 'cram/lib/nodeFileReader'
 			],
 			start,
 			fail
@@ -235,7 +236,7 @@ var define, require, curl; // we will create a temporary define()
 	}
 
 	function cramDir () {
-		var cwd, curdir, pos;
+		var curdir, pos;
 		// find the folder with all of the js modules in it!
 		// we're sniffing for features here instead of in has.js
 		// since this needs to run first so we can find has.js!
