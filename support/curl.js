@@ -1143,7 +1143,7 @@
 		'Promise': Promise
 	};
 
-}(this.window || global));
+}(this.window || (typeof global != 'undefined' && global) || this));
 /** MIT License (c) copyright B Cavalier & J Hann */
 
 /**
@@ -1357,7 +1357,7 @@ define('curl/shim/ssjs', function (require, exports) {
 	}
 
 	function loadScriptViaRequire (def, success, fail) {
-		var modulePath;
+		var modulePath, exports;
 		try {
 			modulePath = stripExtension(def.url);
 			freeRequire(modulePath);

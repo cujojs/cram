@@ -10,42 +10,34 @@
  * @version 0.6
  */
 
-/*
-
-	Assumes the following are available in the environment:
-	load: function (fileOrUrlString) { return undefined; }
-	print: function (...) { return undefined; }
-	quit: function () { return undefined; }
-	arguments: array-like object containing CLI arguments
-
- */
-var load, print, quit; // prevent syntax checker / linter from complaining
-var define, require, curl; // we will create a temporary define()
-(function (globalDefine, args) {
+(function (global, globalDefine, args) {
 "use strict";
 
-	var loader, has, writer, fetcher, Loader, Resolver, Analyzer,
-		Builder, config, moduleIds, cramFolder, undef;
+	var loader, logger, quitter, has, config, cramFolder, curl, undef;
 
 	try {
 
-		// TODO: stop normalizing to Rhino API. shim up to a modern API.
 		// TODO: ensure all load/require operations can be async
 
-		// ensure we have a load method
-		if (require) load = require; // require() is preferred when it's available
-		if (!load) {
-			throw new Error('no load() or require() found in environment.');
+		// ensure we have a loader method
+		loader = typeof require == 'function'
+			? function (id) {
+				if (!/^[./]/.test(id)) id = './' + id;
+				return require(id);
+			}
+			: load;
+		if (!loader) {
+			throw new Error('could not create loader()');
 		}
 
-		if (!print) print = console && console.log.bind(console);
-		if (!print) {
-			throw new Error('no print() or console.log() found in environment.');
+		logger = typeof console != 'undefined' ? console.log.bind(console) : print;
+		if (!logger) {
+			throw new Error('could not create logger()');
 		}
 
-		if (!quit) quit = process && process.exit.bind(process);
-		if (!quit) {
-			throw new Error('no quit() or process.exit() found in environment.');
+		quitter = process && process.exit ? process.exit.bind(process) : quit;
+		if (!quitter) {
+			throw new Error('could not create quitter()');
 		}
 
 		// parse the arguments sent to this file
@@ -60,23 +52,25 @@ var define, require, curl; // we will create a temporary define()
 		// load (and run) feature tests
 		// this declares has() function
 		has = simpleRequire(joinPaths(cramFolder, './lib/has'));
+		//has = simpleRequire(joinPaths(cramFolder, './lib/has'));
 
 		// bail now if we can't load text files since we can't read a json config.
 		// shell script should convert the config to a .js file / AMD module
 		// and re-run this file
-		if (!has('readFile') && isJsonFile(args.configFile)) {
-			print('Configuration file must be wrapped in define with this javascript engine.');
+		if (!has('readFile') && !has('loadJson') && isJsonFile(args.configFile)) {
+			logger('Configuration file must be wrapped in define with this javascript engine.');
 			return;
 		}
 
 		// load appropriate modules according to the environment
 		if (!has('json')) {
-			// json2.js is not a module. it's plain old js so don't use loader
-			load(joinPaths(cramFolder, './lib/json2.js'));
+			// json2.js is not a module. it's plain old js
+			loader(joinPaths(cramFolder, './lib/json2.js'));
 		}
 
 		// load configuration data
-		config = loadConfig(args.configFile);
+		config = loadConfig(joinPaths(cramFolder, args.configFile));
+		if (args.baseUrl == '.') args.baseUrl = ''; // TODO: make this more robust
 		config.baseUrl = joinPaths(args.baseUrl, config.baseUrl || '');
 		config.destUrl = args.destUrl || config.destUrl || '';
 		config.rootModule = args.rootModule || config.rootModule;
@@ -93,19 +87,18 @@ var define, require, curl; // we will create a temporary define()
 			config.paths.curl = joinPaths(cramFolder, './support/curl');
 			config.paths.when = joinPaths(cramFolder, './support/when');
 		}
-		if (!config.paths.cram && ! config.packages.cram) {
+		if (!config.paths.cram && !config.packages.cram) {
 			config.paths.cram = cramFolder;
 		}
 
-		// get cram modules
+		loader(config.paths.curl + '.js');
 		// TODO: we're assuming sync operation here. implement when() so
-		// we can operate in async environs such as browsers
-		simpleRequire(joinPaths(cramFolder, './lib/curlLoader'));
-
+		// we can operate in async environs such as browsers.
 		// curl global should be available now
-		if (!curl) {
-			throw new Error('curl loader was not loaded.');
+		if (!global.curl) {
+			throw new Error('curl() was not loaded.');
 		}
+		curl = global.curl;
 
 		// configure curl
 		curl(config);
@@ -114,8 +107,8 @@ var define, require, curl; // we will create a temporary define()
 		curl(
 			[
 				'require',
-				has('java') ? 'cram/lib/io/javaFileWriter' : 'cram/lib/nodeFileWriter',
-				has('readFile') ? 'cram/lib/io/readFileFileReader' : 'cram/lib/nodeFileReader'
+				has('java') ? 'cram/lib/io/javaFileWriter' : 'cram/lib/io/nodeFileWriter',
+				has('readFile') ? 'cram/lib/io/readFileFileReader' : 'cram/lib/io/nodeFileReader'
 			],
 			start,
 			fail
@@ -153,7 +146,7 @@ var define, require, curl; // we will create a temporary define()
 
 			if (writer.getOutput) {
 				//get output from writer(s) and print to caller
-				print(writer.getOutput());
+				logger(writer.getOutput());
 				// don't print?
 			}
 			else if (writer.closeAll) {
@@ -225,8 +218,13 @@ var define, require, curl; // we will create a temporary define()
 	function loadConfig (filename) {
 		var cfg;
 		if (isJsonFile(filename)) {
-			// eval is more forgiving than JSON.parse
-			cfg = eval('(' + readFile(filename) + ')');
+			if (has('readFile')) {
+				// eval is more forgiving than JSON.parse
+				cfg = eval('(' + readFile(filename) + ')');
+			}
+			else {
+				cfg = loader(filename);
+			}
 		}
 		else {
 			// TODO: extract config from a text file using a regexp...
@@ -248,28 +246,29 @@ var define, require, curl; // we will create a temporary define()
 		}
 		pos = curdir.indexOf('/cram');
 		if (pos >= 0) {
-			return curdir.substring(0, pos + 5) + '/js';
+			return curdir.substring(0, pos + 5);
 		}
 	}
 
 	function simpleRequire (url) {
-		var module, simpleDefine;
-		// create a temporary define function that's sufficient to load a
-		// simplified AMD module. this define must run sync and can only
+		var amdModule, cjsModule, simpleDefine;
+		// Create a temporary define function that's sufficient to load a
+		// simplified AMD or UMD module. This define must run sync and can only
 		// have a definition function, not a module id or dependencies.
 		if (!globalDefine) {
-			simpleDefine = define = function (id, definitionFunction) {
+			simpleDefine = global.define = function (id, definitionFunction) {
 				// allow for named modules, but not ones with deps
 				if (typeof id == 'function') definitionFunction = id;
 				// get first module declared (TODO: fix hackishness?)
-				if (!module) module = definitionFunction();
+				if (!amdModule) amdModule = definitionFunction();
 			};
+			simpleDefine.amd = {};
 		}
-		load(url + '.js');
-		if (simpleDefine == define) {
-			define = undef;
+		cjsModule = loader(url + '.js');
+		if (simpleDefine == global.define) {
+			global.define = undef;
 		}
-		return module;
+		return amdModule || cjsModule;
 	}
 
 //	function analyze (config) {
@@ -327,29 +326,33 @@ var define, require, curl; // we will create a temporary define()
 //	}
 
 	function fail (ex) {
-		print('cram failed: ', ex && ex.message);
-		if (ex && ex.stack) print(ex.stack);
-		quit(1);
+		logger('cram failed: ', ex && ex.message);
+		if (ex && ex.stack) logger(ex.stack);
+		quitter(1);
 	}
 
 	function help () {
 		var options;
 		// TODO: auto-generate help string from config options and meta data
 		options = "\t-c, --config config_file\n\t-r, --root root_module_id\n\t-b, --baseurl base_folder\n\t-s, --src path_to_cram_src_folder\n\t-o, --output build_output_file";
-		print('cram, an AMD-compatible module concatenator. An element of the cujo.js suite.');
-		print();
-		print('Usage:');
-		print('\tnode cram.js options');
-		print();
-		print('Options:');
-		print(options);
-		print();
-		print('More help can be found at http://cujojs.com/');
-		quit();
+		logger('cram, an AMD-compatible module concatenator. An element of cujo.js.');
+		logger();
+		logger('Usage:');
+		logger('\tnode cram.js options');
+		logger();
+		logger('Options:');
+		logger(options);
+		logger();
+		logger('More help can be found at http://cujojs.com/');
+		quitter();
 	}
 
-}(define, process && process.argv ? process.argv.slice(2) : Array.prototype.slice.apply(arguments)));
+}(
+	typeof global != 'undefined' ? global : this,
+	typeof define == 'function' && define.amd && define,
+	process && process.argv ? process.argv.slice(2) : Array.prototype.slice.apply(arguments)
+));
 
 // run from cram folder:
-// rhino -O -1 bin/../js/cram.js -c test/tinycfg.json -r js/tiny -b . -o test/output/built.js
-// java org.mozilla.javascript.tools.debugger.Main bin/../js/cram.js -c test/tinycfg.json -r js/tiny -b . -o test/output/built.js
+// rhino -O -1 bin/../cram.js -c test/tinycfg.json -r js/tiny -b . -o test/output/built.js
+// java org.mozilla.javascript.tools.debugger.Main bin/../cram.js -c test/tinycfg.json -r js/tiny -b . -o test/output/built.js

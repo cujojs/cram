@@ -4,7 +4,7 @@
 	"destUrl": "test/output/built.js",
 	"paths": {
 		"js": "test",
-		"curl": "../curl/src/curl"
+		"curl": "./support/curl"
 	},
 	"pluginPath": "curl/plugin"
 
