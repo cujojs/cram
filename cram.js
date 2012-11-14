@@ -85,6 +85,8 @@
 		}
 		if (!config.paths.curl && !config.packages.curl) {
 			config.paths.curl = joinPaths(cramFolder, './support/curl');
+		}
+		if (!config.paths.when && !config.packages.when) {
 			config.paths.when = joinPaths(cramFolder, './support/when');
 		}
 		if (!config.paths.cram && !config.packages.cram) {
@@ -107,6 +109,8 @@
 		curl(
 			[
 				'require',
+				'when',
+				'cram/lib/compile',
 				has('java') ? 'cram/lib/io/javaFileWriter' : 'cram/lib/io/nodeFileWriter',
 				has('readFile') ? 'cram/lib/io/readFileFileReader' : 'cram/lib/io/nodeFileReader'
 			],
@@ -121,42 +125,65 @@
 
 	return;
 
-	function start (require, writer, fetcher) {
+	function start (require, when, compile, writer, reader) {
+		var ids, io;
 
 		try {
 
-			// TODO: continue build process here
+			ids = config.preloads || [];
+			if (config.includes) ids = ids.concat(config.includes);
+			ids = ids.concat(config.rootModule);
 
-			// normalize:
-			// load resource/module
+			// TODO: exclude "config.excludes"
+
+
+			// compile phase:
 			// transform it to AMD, if necessary
-			// write to cache here
-
-			// scan:
 			// scan for dependencies, etc.
 			// cache AST here
+			io = {
+				readModule: function (ctx) {
+					var d, r;
+					d = when.defer();
+					r = reader.getReader(ctx.withExt(ctx.toUrl(ctx.absId)));
+					r(d.resolve, d.reject);
+					return d.promise;
+				},
+				writeModule: function (ctx, contents) {
+					var d, w;
+					d = when.defer();
+					w = writer.getWriter(joinPaths('.cram/modules', ctx.absId));
+					w(contents, d.resolve, d.reject);
+					return d.promise;
+				},
+				require: require,
+				toUrl: require.toUrl,
+				config: function () { return config; }
+			};
+			compile(ids, io)/*.then(
+				function () {},
+				fail
+			)*/.then(cleanup, fail);
 
-			// compile
+			// optimize phase: ??????
 			// compile to optimized AMD (define/require mapping would happen here?)
 			// cache optimized file here
 
-			// link:
+			// link phase:
 			// link / concat modules
 
 
-			if (writer.getOutput) {
-				//get output from writer(s) and print to caller
-				logger(writer.getOutput());
-				// don't print?
-			}
-			else if (writer.closeAll) {
-				// clean up
-				writer.closeAll();
-			}
 
 		}
 		catch (ex) {
 			fail(ex);
+		}
+
+		function cleanup () {
+			if (writer.closeAll) {
+				// clean up
+				writer.closeAll();
+			}
 		}
 
 	}
