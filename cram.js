@@ -152,15 +152,12 @@
 				writeModule: function (ctx, contents) {
 					var d, w;
 					d = when.defer();
-					w = writer.getWriter(joinPaths('.cram/modules', ctx.absId));
+					w = writer.getWriter(joinPaths('.cram/meta', ctx.absId));
 					w(contents, d.resolve, d.reject);
 					return d.promise;
-				},
-				require: require,
-				toUrl: require.toUrl,
-				config: function () { return config; }
+				}
 			};
-			compile(ids, io)/*.then(
+			compile(ids, io, config)/*.then(
 				function () {},
 				fail
 			)*/.then(cleanup, fail);
