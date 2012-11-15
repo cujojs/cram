@@ -126,7 +126,7 @@
 	return;
 
 	function start (require, when, compile, writer, reader) {
-		var ids, io;
+		var ids, discovered, io;
 
 		try {
 
@@ -134,8 +134,11 @@
 			if (config.includes) ids = ids.concat(config.includes);
 			ids = ids.concat(config.rootModule);
 
-			// TODO: exclude "config.excludes"
+			// TODO: collect, but exclude "config.excludes" from output
 
+			// collect modules encountered, in order
+			// dual array/hashmap
+			discovered = [];
 
 			// compile phase:
 			// transform it to AMD, if necessary
@@ -157,9 +160,9 @@
 					return d.promise;
 				}
 			};
-			compile(ids, io, config).then(
-				function (ids) {
-					console.log(ids);
+			compile(ids, io, collect, config).then(
+				function () {
+					console.log(discovered);
 				},
 				fail
 			).then(cleanup, fail);
@@ -183,6 +186,15 @@
 				// clean up
 				writer.closeAll();
 			}
+		}
+
+		function collect (id) {
+			var top;
+			if (id in discovered) return discovered[id];
+			top = discovered.length;
+			discovered[id] = top;
+			discovered[top] = id;
+			return top;
 		}
 
 	}
