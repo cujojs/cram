@@ -7,18 +7,22 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  *
- * @version 1.4.4
+ * @version 1.6.1
  */
 
-(function(define) {
-define(function() { "use strict";
-	var freeze, reduceArray, slice, undef;
+(function(define) { 'use strict';
+define(['module'], function () {
+	var reduceArray, slice, undef;
 
+	//
 	// Public API
+	//
 
 	when.defer     = defer;     // Create a deferred
 	when.resolve   = resolve;   // Create a resolved promise
 	when.reject    = reject;    // Create a rejected promise
+
+	when.join      = join;      // Join 2 or more promises
 
 	when.all       = all;       // Resolve a list of promises
 	when.some      = some;      // Resolve a sub-set of promises
@@ -39,7 +43,7 @@ define(function() { "use strict";
 	 *
 	 * @param promiseOrValue {*}
 	 * @param {Function} [callback] callback to be called when promiseOrValue is
-	 *   successfully resolved.  If promiseOrValue is an immediate value, callback
+	 *   successfully fulfilled.  If promiseOrValue is an immediate value, callback
 	 *   will be invoked immediately.
 	 * @param {Function} [errback] callback to be called when promiseOrValue is
 	 *   rejected.
@@ -57,8 +61,8 @@ define(function() { "use strict";
 
 	/**
 	 * Returns promiseOrValue if promiseOrValue is a {@link Promise}, a new Promise if
-	 * promiseOrValue is a foreign promise, or a new, already-resolved {@link Promise}
-	 * whose resolution value is promiseOrValue if promiseOrValue is an immediate value.
+	 * promiseOrValue is a foreign promise, or a new, already-fulfilled {@link Promise}
+	 * whose value is promiseOrValue if promiseOrValue is an immediate value.
 	 * @memberOf when
 	 *
 	 * @param promiseOrValue {*}
@@ -76,8 +80,7 @@ define(function() { "use strict";
 			promise = promiseOrValue;
 
 		} else {
-			// It's not a when.js promise.
-			// Check to see if it's a foreign promise or a value.
+			// It's not a when.js promise. See if it's a foreign promise or a value.
 
 			// Some promises, particularly Q promises, provide a valueOf method that
 			// attempts to synchronously return the fulfilled value of the promise, or
@@ -86,7 +89,9 @@ define(function() { "use strict";
 			// Q and When attempting to coerce each-other's promises in an infinite loop.
 			// For promises that do not implement "valueOf", the Object#valueOf is harmless.
 			// See: https://github.com/kriskowal/q/issues/106
-			if (promiseOrValue != null && typeof promiseOrValue.valueOf === "function") {
+			// IMPORTANT: Must check for a promise here, since valueOf breaks other things
+			// like Date.
+			if (isPromise(promiseOrValue) && typeof promiseOrValue.valueOf === 'function') {
 				promiseOrValue = promiseOrValue.valueOf();
 			}
 
@@ -103,7 +108,7 @@ define(function() { "use strict";
 
 			} else {
 				// It's a value, not a promise.  Create a resolved promise for it.
-				promise = resolved(promiseOrValue);
+				promise = fulfilled(promiseOrValue);
 			}
 		}
 
@@ -127,21 +132,17 @@ define(function() { "use strict";
 	}
 
 	/**
-	 * Object.freeze
-	 * @private
-	 */
-	freeze = Object.freeze || function(o) { return o; };
-
-	/**
 	 * Trusted Promise constructor.  A Promise created from this constructor is
 	 * a trusted when.js promise.  Any other duck-typed promise is considered
 	 * untrusted.
 	 * @constructor
 	 * @name Promise
 	 */
-	function Promise() {}
+	function Promise(then) {
+		this.then = then;
+	}
 
-	Promise.prototype = freeze({
+	Promise.prototype = {
 		/**
 		 * Register a callback that will be called when a promise is
 		 * resolved or rejected.  Optionally also register a progress handler.
@@ -164,7 +165,7 @@ define(function() { "use strict";
 		otherwise: function(errback) {
 			return this.then(undef, errback);
 		}
-	});
+	};
 
 	/**
 	 * Create an already-resolved promise for the supplied value
@@ -173,19 +174,16 @@ define(function() { "use strict";
 	 * @param value anything
 	 * @return {Promise}
 	 */
-	function resolved(value) {
-
-		var p = new Promise();
-
-		p.then = function(callback) {
+	function fulfilled(value) {
+		var p = new Promise(function(callback) {
 			try {
 				return resolve(callback ? callback(value) : value);
 			} catch(e) {
 				return rejected(e);
 			}
-		};
+		});
 
-		return freeze(p);
+		return p;
 	}
 
 	/**
@@ -197,18 +195,15 @@ define(function() { "use strict";
 	 * @return {Promise}
 	 */
 	function rejected(reason) {
-
-		var p = new Promise();
-
-		p.then = function(callback, errback) {
+		var p = new Promise(function(callback, errback) {
 			try {
 				return errback ? resolve(errback(reason)) : rejected(reason);
 			} catch(e) {
 				return rejected(e);
 			}
-		};
+		});
 
-		return freeze(p);
+		return p;
 	}
 
 	/**
@@ -223,88 +218,38 @@ define(function() { "use strict";
 	 * @return {Deferred}
 	 */
 	function defer() {
-		var deferred, promise, resolver, listeners, progressHandlers,
+		var deferred, promise, handlers, progressHandlers,
 			_then, _progress, _resolve;
 
-		listeners = [];
-		progressHandlers = [];
+		/**
+		 * The promise for the new deferred
+		 * @type {Promise}
+		 */
+		promise = new Promise(then);
 
 		/**
 		 * The full Deferred object, with {@link Promise} and {@link Resolver} parts
 		 * @class Deferred
 		 * @name Deferred
 		 */
-		deferred = {};
+		deferred = {
+			then:     then,
+			resolve:  promiseResolve,
+			reject:   promiseReject,
+			// TODO: Consider renaming progress() to notify()
+			progress: promiseProgress,
 
-		/**
-		 * The {@link Resolver} for this {@link Deferred}
-		 * @memberOf Deferred
-		 * @name resolver
-		 * @class Resolver
-		 */
-		resolver = {};
+			promise:  promise,
 
-		/**
-		 * The {@link Promise} for this {@link Deferred}
-		 * @memberOf Deferred
-		 * @name promise
-		 * @type {Promise}
-		 */
-		promise = new Promise();
-
-		/**
-		 * Registers a handler for this {@link Deferred}'s {@link Promise}.  Even though all arguments
-		 * are optional, each argument that *is* supplied must be null, undefined, or a Function.
-		 * Any other value will cause an Error to be thrown.
-		 * @memberOf Promise
-		 * @name then
-		 * @param [callback] {Function} resolution handler
-		 * @param [errback] {Function} rejection handler
-		 * @param [progback] {Function} progress handler
-		 * @throw {Error} if any argument is not null, undefined, or a Function
-		 */
-		promise.then = deferred.then = function then(callback, errback, progback) {
-			return _then(callback, errback, progback);
+			resolver: {
+				resolve:  promiseResolve,
+				reject:   promiseReject,
+				progress: promiseProgress
+			}
 		};
 
-		deferred.promise = freeze(promise);
-
-		/**
-		 * Resolves this {@link Deferred}'s {@link Promise} with val as the
-		 * resolution value.
-		 * @memberOf Resolver
-		 * @param val {*|Promise} If val is anything but a Promise, resolves this
-		 *  Deferred's Promise with val.  If val is a Promise, puts this Deferred's
-		 *  Promise into the same state as val.  For example, if val is a rejected
-		 *  promise, this Deferred will become rejected.
-		 * @return {Promise} a promise for the resolution value
-		 */
-		resolver.resolve = deferred.resolve = function promiseResolve(val) {
-			return _resolve(val);
-		};
-
-		/**
-		 * Rejects this {@link Deferred}'s {@link Promise} with err as the
-		 * reason.
-		 * @memberOf Resolver
-		 * @param err anything
-		 * @return {Promise} a promise for the rejection value
-		 */
-		resolver.reject = deferred.reject = function promiseReject(err) {
-			return _resolve(rejected(err));
-		};
-
-		/**
-		 * Emits a progress update to all progress observers registered with
-		 * this {@link Deferred}'s {@link Promise}
-		 * @memberOf Resolver
-		 * @param update anything
-		 */
-		resolver.progress = deferred.progress = function promiseProgress(update) {
-			_progress(update);
-		};
-
-		deferred.resolver = freeze(resolver);
+		handlers = [];
+		progressHandlers = [];
 
 		/**
 		 * Pre-resolution then() that adds the supplied callback, errback, and progback
@@ -317,14 +262,27 @@ define(function() { "use strict";
 		 * @throws {Error} if any argument is not null, undefined, or a Function
 		 */
 		_then = function(callback, errback, progback) {
-			var deferred = defer();
+			var deferred, progressHandler;
 
-			listeners.push(function(promise) {
+			deferred = defer();
+			progressHandler = progback
+				? function(update) {
+					try {
+						// Allow progress handler to transform progress event
+						deferred.progress(progback(update));
+					} catch(e) {
+						// Use caught value as progress
+						deferred.progress(e);
+					}
+				}
+				: deferred.progress;
+
+			handlers.push(function(promise) {
 				promise.then(callback, errback)
-					.then(deferred.resolve, deferred.reject, deferred.progress);
+					.then(deferred.resolve, deferred.reject, progressHandler);
 			});
 
-			progback && progressHandlers.push(progback);
+			progressHandlers.push(progressHandler);
 
 			return deferred.promise;
 		};
@@ -335,11 +293,8 @@ define(function() { "use strict";
 		 * @param update {*} progress event payload to pass to all listeners
 		 */
 		_progress = function(update) {
-			var progress, i = 0;
-
-			while (progress = progressHandlers[i++]) {
-				progress(update);
-			}
+			processQueue(progressHandlers, update);
+			return update;
 		};
 
 		/**
@@ -349,36 +304,59 @@ define(function() { "use strict";
 		 * @param completed {Promise} the completed value of this deferred
 		 */
 		_resolve = function(completed) {
-			var listener, i = 0;
-
 			completed = resolve(completed);
 
 			// Replace _then with one that directly notifies with the result.
 			_then = completed.then;
+			// Replace _resolve so that this Deferred can only be completed once
+			_resolve = resolve;
+			// Make _progress a noop, to disallow progress for the resolved promise.
+			_progress = noop;
 
-			// Replace complete so that this Deferred can only be completed
-			// once. Also Replace _progress, so that subsequent attempts to issue
-			// progress throw.
-			_resolve = _progress = function alreadyResolved() {
-				// TODO: Consider silently returning here so that parties who
-				// have a reference to the resolver cannot tell that the promise
-				// has been resolved using try/catch
-				throw new Error("already completed");
-			};
-
-			// Notify listeners
-			while (listener = listeners[i++]) {
-				listener(completed);
-			}
+			// Notify handlers
+			processQueue(handlers, completed);
 
 			// Free progressHandlers array since we'll never issue progress events
-			// for this promise again now that it's completed
-			progressHandlers = listeners = undef;
+			progressHandlers = handlers = undef;
 
 			return completed;
 		};
 
 		return deferred;
+
+		/**
+		 * Wrapper to allow _then to be replaced safely
+		 * @param [callback] {Function} resolution handler
+		 * @param [errback] {Function} rejection handler
+		 * @param [progback] {Function} progress handler
+		 * @return {Promise} new Promise
+		 * @throws {Error} if any argument is not null, undefined, or a Function
+		 */
+		function then(callback, errback, progback) {
+			return _then(callback, errback, progback);
+		}
+
+		/**
+		 * Wrapper to allow _resolve to be replaced
+		 */
+		function promiseResolve(val) {
+			return _resolve(val);
+		}
+
+		/**
+		 * Wrapper to allow _resolve to be replaced
+		 */
+		function promiseReject(err) {
+			return _resolve(rejected(err));
+		}
+
+		/**
+		 * Wrapper to allow _progress to be replaced
+		 * @param {*} update progress update
+		 */
+		function promiseProgress(update) {
+			return _progress(update);
+		}
 	}
 
 	/**
@@ -386,7 +364,7 @@ define(function() { "use strict";
 	 * test from http://wiki.commonjs.org/wiki/Promises/A to determine if
 	 * promiseOrValue is a promise.
 	 *
-	 * @param promiseOrValue anything
+	 * @param {*} promiseOrValue anything
 	 * @returns {Boolean} true if promiseOrValue is a {@link Promise}
 	 */
 	function isPromise(promiseOrValue) {
@@ -394,90 +372,108 @@ define(function() { "use strict";
 	}
 
 	/**
-	 * Return a promise that will resolve when howMany of the supplied promisesOrValues
-	 * have resolved. The resolution value of the returned promise will be an array of
-	 * length howMany containing the resolutions values of the triggering promisesOrValues.
+	 * Initiates a competitive race, returning a promise that will resolve when
+	 * howMany of the supplied promisesOrValues have resolved, or will reject when
+	 * it becomes impossible for howMany to resolve, for example, when
+	 * (promisesOrValues.length - howMany) + 1 input promises reject.
 	 * @memberOf when
 	 *
 	 * @param promisesOrValues {Array} array of anything, may contain a mix
 	 *      of {@link Promise}s and values
-	 * @param howMany
-	 * @param [callback]
-	 * @param [errback]
-	 * @param [progressHandler]
-	 * @returns {Promise}
+	 * @param howMany {Number} number of promisesOrValues to resolve
+	 * @param [callback] {Function} resolution handler
+	 * @param [errback] {Function} rejection handler
+	 * @param [progback] {Function} progress handler
+	 * @returns {Promise} promise that will resolve to an array of howMany values that
+	 * resolved first, or will reject with an array of (promisesOrValues.length - howMany) + 1
+	 * rejection reasons.
 	 */
-	function some(promisesOrValues, howMany, callback, errback, progressHandler) {
+	function some(promisesOrValues, howMany, callback, errback, progback) {
 
 		checkCallbacks(2, arguments);
 
 		return when(promisesOrValues, function(promisesOrValues) {
 
-			var toResolve, results, deferred, resolver, rejecter, handleProgress, len, i;
+			var toResolve, toReject, values, reasons, deferred, fulfillOne, rejectOne, progress, len, i;
 
 			len = promisesOrValues.length >>> 0;
 
 			toResolve = Math.max(0, Math.min(howMany, len));
-			results = [];
+			values = [];
+
+			toReject = (len - toResolve) + 1;
+			reasons = [];
+
 			deferred = defer();
-
-			// Wrapper so that resolver can be replaced
-			function resolve(val) {
-				resolver(val);
-			}
-
-			// Wrapper so that rejecter can be replaced
-			function reject(err) {
-				rejecter(err);
-			}
-
-			// Wrapper so that progress can be replaced
-			function progress(update) {
-				handleProgress(update);
-			}
 
 			// No items in the input, resolve immediately
 			if (!toResolve) {
-				deferred.resolve(results);
+				deferred.resolve(values);
 
 			} else {
-				deferred.promise.always(function complete() {
-					resolver = rejecter = handleProgress = noop;
-				});
+				progress = deferred.progress;
 
-				// Rejecter for promises.  Rejects returned promise
-				// immediately, and overwrites rejecter var with a noop
-				// once promise to cover case where n < promises.length.
-				// TODO: Consider rejecting only when N (or promises.length - N?)
-				// promises have been rejected instead of only one?
-				rejecter = deferred.reject;
-				handleProgress = deferred.progress;
-
-				// Resolver for promises.  Captures the value and resolves
-				// the returned promise when toResolve reaches zero.
-				// Overwrites resolver var with a noop once promise has
-				// be resolved to cover case where n < promises.length
-				resolver = function(val) {
-					// This orders the values based on promise resolution order
-					// Another strategy would be to use the original position of
-					// the corresponding promise.
-					results.push(val);
-
-					if (!--toResolve) {
-						deferred.resolve(results);
+				rejectOne = function(reason) {
+					reasons.push(reason);
+					if(!--toReject) {
+						fulfillOne = rejectOne = noop;
+						deferred.reject(reasons);
 					}
 				};
 
-				// TODO: Replace while with forEach
+				fulfillOne = function(val) {
+					// This orders the values based on promise resolution order
+					// Another strategy would be to use the original position of
+					// the corresponding promise.
+					values.push(val);
+
+					if (!--toResolve) {
+						fulfillOne = rejectOne = noop;
+						deferred.resolve(values);
+					}
+				};
+
 				for(i = 0; i < len; ++i) {
 					if(i in promisesOrValues) {
-						when(promisesOrValues[i], resolve, reject, progress);
+						when(promisesOrValues[i], fulfiller, rejecter, progress);
 					}
 				}
 			}
 
-			return when(deferred, callback, errback, progressHandler);
+			return deferred.then(callback, errback, progback);
+
+			function rejecter(reason) {
+				rejectOne(reason);
+			}
+
+			function fulfiller(val) {
+				fulfillOne(val);
+			}
+
 		});
+	}
+
+	/**
+	 * Initiates a competitive race, returning a promise that will resolve when
+	 * any one of the supplied promisesOrValues has resolved or will reject when
+	 * *all* promisesOrValues have rejected.
+	 * @memberOf when
+	 *
+	 * @param promisesOrValues {Array|Promise} array of anything, may contain a mix
+	 *      of {@link Promise}s and values
+	 * @param [callback] {Function} resolution handler
+	 * @param [errback] {Function} rejection handler
+	 * @param [progback] {Function} progress handler
+	 * @returns {Promise} promise that will resolve to the value that resolved first, or
+	 * will reject with an array of all rejected inputs.
+	 */
+	function any(promisesOrValues, callback, errback, progback) {
+
+		function unwrapSingleResult(val) {
+			return callback ? callback(val[0]) : val[0];
+		}
+
+		return some(promisesOrValues, 1, unwrapSingleResult, errback, progback);
 	}
 
 	/**
@@ -494,39 +490,19 @@ define(function() { "use strict";
 	 * @returns {Promise}
 	 */
 	function all(promisesOrValues, callback, errback, progressHandler) {
-
 		checkCallbacks(1, arguments);
-
-		return when(promisesOrValues, function(promisesOrValues) {
-			return _reduce(promisesOrValues, reduceIntoArray, []);
-		}).then(callback, errback, progressHandler);
-	}
-
-	function reduceIntoArray(current, val, i) {
-		current[i] = val;
-		return current;
+		return map(promisesOrValues, identity).then(callback, errback, progressHandler);
 	}
 
 	/**
-	 * Return a promise that will resolve when any one of the supplied promisesOrValues
-	 * has resolved. The resolution value of the returned promise will be the resolution
-	 * value of the triggering promiseOrValue.
+	 * Joins multiple promises into a single returned promise.
 	 * @memberOf when
-	 *
-	 * @param promisesOrValues {Array|Promise} array of anything, may contain a mix
-	 *      of {@link Promise}s and values
-	 * @param [callback] {Function}
-	 * @param [errback] {Function}
-	 * @param [progressHandler] {Function}
-	 * @returns {Promise}
+	 * @param  {Promise|*} [...promises] two or more promises to join
+	 * @return {Promise} a promise that will fulfill when *all* the input promises
+	 * have fulfilled, or will reject when *any one* of the input promises rejects.
 	 */
-	function any(promisesOrValues, callback, errback, progressHandler) {
-
-		function unwrapSingleResult(val) {
-			return callback ? callback(val[0]) : val[0];
-		}
-
-		return some(promisesOrValues, 1, unwrapSingleResult, errback, progressHandler);
+	function join(/* ...promises */) {
+		return map(arguments, identity);
 	}
 
 	/**
@@ -545,41 +521,43 @@ define(function() { "use strict";
 	 */
 	function map(promise, mapFunc) {
 		return when(promise, function(array) {
-			return _map(array, mapFunc);
-		});
-	}
+			var results, len, toResolve, resolve, reject, i, d;
 
-	/**
-	 * Private map helper to map an array of promises
-	 * @private
-	 *
-	 * @param promisesOrValues {Array}
-	 * @param mapFunc {Function}
-	 * @return {Promise}
-	 */
-	function _map(promisesOrValues, mapFunc) {
+			// Since we know the resulting length, we can preallocate the results
+			// array to avoid array expansions.
+			toResolve = len = array.length >>> 0;
+			results = [];
+			d = defer();
 
-		var results, len, i;
+			if(!toResolve) {
+				d.resolve(results);
+			} else {
 
-		// Since we know the resulting length, we can preallocate the results
-		// array to avoid array expansions.
-		len = promisesOrValues.length >>> 0;
-		results = new Array(len);
+				reject = d.reject;
+				resolve = function resolveOne(item, i) {
+					when(item, mapFunc).then(function(mapped) {
+						results[i] = mapped;
 
-		// Since mapFunc may be async, get all invocations of it into flight
-		// asap, and then use reduce() to collect all the results
-		for(i = 0; i < len; i++) {
-			if(i in promisesOrValues) {
-				results[i] = when(promisesOrValues[i], mapFunc);
+						if(!--toResolve) {
+							d.resolve(results);
+						}
+					}, reject);
+				};
+
+				// Since mapFunc may be async, get all invocations of it into flight
+				for(i = 0; i < len; i++) {
+					if(i in array) {
+						resolve(array[i], i);
+					} else {
+						--toResolve;
+					}
+				}
+
 			}
-		}
 
-		// Could use all() here, but that would result in another array
-		// being allocated, i.e. map() would end up allocating 2 arrays
-		// of size len instead of just 1.  Since all() uses reduce()
-		// anyway, avoid the additional allocation by calling reduce
-		// directly.
-		return _reduce(results, reduceIntoArray, results);
+			return d.promise;
+
+		});
 	}
 
 	/**
@@ -595,48 +573,29 @@ define(function() { "use strict";
 	 * @param reduceFunc {Function} reduce function reduce(currentValue, nextValue, index, total),
 	 *      where total is the total number of items being reduced, and will be the same
 	 *      in each call to reduceFunc.
-	 * @param initialValue starting value, or a {@link Promise} for the starting value
+	 * @param [initialValue] {*} starting value, or a {@link Promise} for the starting value
 	 * @returns {Promise} that will resolve to the final reduced value
 	 */
-	function reduce(promise, reduceFunc, initialValue) {
+	function reduce(promise, reduceFunc /*, initialValue */) {
 		var args = slice.call(arguments, 1);
+
 		return when(promise, function(array) {
-			return _reduce.apply(undef, [array].concat(args));
-		});
-	}
+			var total;
 
-	/**
-	 * Private reduce to reduce an array of promises
-	 * @private
-	 *
-	 * @param promisesOrValues {Array}
-	 * @param reduceFunc {Function}
-	 * @param initialValue {*}
-	 * @return {Promise}
-	 */
-	function _reduce(promisesOrValues, reduceFunc, initialValue) {
+			total = array.length;
 
-		var total, args;
-
-		total = promisesOrValues.length;
-
-		// Wrap the supplied reduceFunc with one that handles promises and then
-		// delegates to the supplied.
-		args = [
-			function (current, val, i) {
+			// Wrap the supplied reduceFunc with one that handles promises and then
+			// delegates to the supplied.
+			args[0] = function (current, val, i) {
 				return when(current, function (c) {
 					return when(val, function (value) {
 						return reduceFunc(c, value, i, total);
 					});
 				});
-			}
-		];
+			};
 
-		if (arguments.length > 2) {
-			args.push(initialValue);
-		}
-
-		return reduceArray.apply(promisesOrValues, args);
+			return reduceArray.apply(array, args);
+		});
 	}
 
 	/**
@@ -664,6 +623,14 @@ define(function() { "use strict";
 	//
 	// Utility functions
 	//
+
+	function processQueue(queue, value) {
+		var handler, i = 0;
+
+		while (handler = queue[i++]) {
+			handler(value);
+		}
+	}
 
 	/**
 	 * Helper that checks arrayOfCallbacks to ensure that each element is either
@@ -699,6 +666,8 @@ define(function() { "use strict";
 	// specifics and edge cases.
 	reduceArray = [].reduce ||
 		function(reduceFunc /*, initialValue */) {
+			/*jshint maxcomplexity: 7*/
+
 			// ES5 dictates that reduce.length === 1
 
 			// This implementation deviates from ES5 spec in the following ways:
@@ -710,7 +679,6 @@ define(function() { "use strict";
 			// This generates a jshint warning, despite being valid
 			// "Missing 'new' prefix when invoking a constructor."
 			// See https://github.com/jshint/jshint/issues/392
-			/*jshint newcap: false */
 			arr = Object(this);
 			len = arr.length >>> 0;
 			args = arguments;
@@ -747,11 +715,15 @@ define(function() { "use strict";
 			return reduced;
 		};
 
-	return freeze(when);
+	function identity(x) {
+		return x;
+	}
+
+	return when;
 });
-})(typeof define == 'function'
+})(typeof define == 'function' && define.amd
 	? define
-	: function (factory) { typeof exports != 'undefined'
+	: function (deps, factory) { typeof exports === 'object'
 		? (module.exports = factory())
 		: (this.when      = factory());
 	}
