@@ -157,10 +157,12 @@
 					return d.promise;
 				}
 			};
-			compile(ids, io, config)/*.then(
-				function () {},
+			compile(ids, io, config).then(
+				function (ids) {
+					console.log(ids);
+				},
 				fail
-			)*/.then(cleanup, fail);
+			).then(cleanup, fail);
 
 			// optimize phase: ??????
 			// compile to optimized AMD (define/require mapping would happen here?)
