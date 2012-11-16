@@ -111,6 +111,7 @@
 				'require',
 				'when',
 				'cram/lib/compile',
+				'cram/lib/link',
 				has('java') ? 'cram/lib/io/javaFileWriter' : 'cram/lib/io/nodeFileWriter',
 				has('readFile') ? 'cram/lib/io/readFileFileReader' : 'cram/lib/io/nodeFileReader'
 			],
@@ -125,7 +126,7 @@
 
 	return;
 
-	function start (require, when, compile, writer, reader) {
+	function start (require, when, compile, link, writer, reader) {
 		var ids, discovered, io;
 
 		try {
@@ -155,6 +156,20 @@
 				writeModule: function (ctx, contents) {
 					var d, w;
 					d = when.defer();
+					w = writer.getWriter('.cram/linked/main.js');
+					w(contents, d.resolve, d.reject);
+					return d.promise;
+				},
+				readMeta: function (ctx) {
+					var d, r;
+					d = when.defer();
+					r = reader.getReader(joinPaths('.cram/meta', ctx.absId));
+					r(d.resolve, d.reject);
+					return d.promise;
+				},
+				writeMeta: function (ctx, contents) {
+					var d, w;
+					d = when.defer();
 					w = writer.getWriter(joinPaths('.cram/meta', ctx.absId));
 					w(contents, d.resolve, d.reject);
 					return d.promise;
@@ -162,19 +177,9 @@
 			};
 			compile(ids, io, collect, config).then(
 				function () {
-					console.log(discovered);
-				},
-				fail
+					return link(discovered, io, config);
+				}
 			).then(cleanup, fail);
-
-			// optimize phase: ??????
-			// compile to optimized AMD (define/require mapping would happen here?)
-			// cache optimized file here
-
-			// link phase:
-			// link / concat modules
-
-
 
 		}
 		catch (ex) {
