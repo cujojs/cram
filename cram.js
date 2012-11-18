@@ -84,10 +84,10 @@
 			config.packages = [];
 		}
 		if (!config.paths.curl && !config.packages.curl) {
-			config.paths.curl = joinPaths(cramFolder, './support/curl');
+			config.paths.curl = joinPaths(cramFolder, 'support/curl');
 		}
 		if (!config.paths.when && !config.packages.when) {
-			config.paths.when = joinPaths(cramFolder, './support/when');
+			config.paths.when = joinPaths(cramFolder, 'support/when');
 		}
 		if (!config.paths.cram && !config.packages.cram) {
 			config.paths.cram = cramFolder;
@@ -173,9 +173,10 @@
 					w = writer.getWriter(joinPaths('.cram/meta', ctx.absId));
 					w(contents, d.resolve, d.reject);
 					return d.promise;
-				}
+				},
+				collect: collect
 			};
-			compile(ids, io, collect, config).then(
+			compile(ids, io, config).then(
 				function () {
 					return link(discovered, io, config);
 				}

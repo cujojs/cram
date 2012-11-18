@@ -3,8 +3,7 @@
 	"baseUrl": "",
 	"destUrl": "test/output/built.js",
 	"paths": {
-		"js": "test",
-		"curl": "./support/curl"
+		"js": "test"
 	},
 	"pluginPath": "curl/plugin"
 
