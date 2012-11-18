@@ -112,6 +112,7 @@
 				'when',
 				'cram/lib/compile',
 				'cram/lib/link',
+				'cram/lib/ctx',
 				has('java') ? 'cram/lib/io/javaFileWriter' : 'cram/lib/io/nodeFileWriter',
 				has('readFile') ? 'cram/lib/io/readFileFileReader' : 'cram/lib/io/nodeFileReader'
 			],
@@ -126,8 +127,8 @@
 
 	return;
 
-	function start (require, when, compile, link, writer, reader) {
-		var ids, discovered, io;
+	function start (require, when, compile, link, getCtx, writer, reader) {
+		var ids, discovered, io, ctx;
 
 		try {
 
@@ -176,9 +177,12 @@
 				},
 				collect: collect
 			};
-			compile(ids, io, config).then(
+
+			ctx = getCtx('', config);
+
+			compile(ids, io, ctx).then(
 				function () {
-					return link(discovered, io, config);
+					return link(discovered, io, ctx);
 				}
 			).then(cleanup, fail);
 
@@ -194,13 +198,19 @@
 			}
 		}
 
-		function collect (id) {
+		/**
+		 * Collect a bunch of things by id, but preserve their order.
+		 * @param id {String}
+		 * @param thing {*}
+		 * @return {*} thing
+		 */
+		function collect (id, thing) {
 			var top;
 			if (id in discovered) return discovered[id];
 			top = discovered.length;
 			discovered[id] = top;
-			discovered[top] = id;
-			return top;
+			discovered[top] = thing;
+			return thing;
 		}
 
 	}
