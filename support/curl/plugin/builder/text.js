@@ -16,7 +16,7 @@ define(['./jsEncode'], function (jsEncode) {
 		},
 
 		compile: function (absId, req, io, config) {
-			io.read(absId, function (text) {
+			io.read(resourceId(absId), function (text) {
 				io.write(
 					'define("' + absId + '", function () {\n' +
 					'\treturn "' + jsEncode(text) + '";\n' +
@@ -25,7 +25,10 @@ define(['./jsEncode'], function (jsEncode) {
 			}, io.error);
 		}
 
-
 	};
+
+	function resourceId (absId) {
+		return absId && absId.split('!')[1] || '';
+	}
 
 });
