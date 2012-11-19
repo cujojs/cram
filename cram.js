@@ -88,7 +88,7 @@
 		}
 		if (!config.paths.when && !config.packages.when) {
 			config.packages.when = {
-				location: 'support/when',
+				location: joinPaths(cramFolder, 'support/when'),
 				main: 'when'
 			};
 		}
