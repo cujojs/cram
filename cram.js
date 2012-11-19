@@ -81,13 +81,16 @@
 			config.paths = {};
 		}
 		if (!config.packages) {
-			config.packages = [];
+			config.packages = {};
 		}
 		if (!config.paths.curl && !config.packages.curl) {
 			config.paths.curl = joinPaths(cramFolder, 'support/curl');
 		}
 		if (!config.paths.when && !config.packages.when) {
-			config.paths.when = joinPaths(cramFolder, 'support/when');
+			config.packages.when = {
+				location: 'support/when',
+				main: 'when'
+			};
 		}
 		if (!config.paths.cram && !config.packages.cram) {
 			config.paths.cram = cramFolder;
