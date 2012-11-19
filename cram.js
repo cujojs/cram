@@ -5,13 +5,14 @@
  * An AMD-compliant javascript module optimizer.
  *
  * Licensed under the MIT License at:
- * 		http://www.opensource.org/licenses/mit-license.php
+ * http://www.opensource.org/licenses/mit-license.php
  *
  * @version 0.6
  */
 
 (function (global, globalDefine, args) {
-"use strict";
+/*global environment:true*/
+'use strict';
 
 	var loader, logger, quitter, has, config, cramFolder, curl, undef;
 
@@ -22,7 +23,7 @@
 		// ensure we have a loader method
 		loader = typeof require == 'function'
 			? function (id) {
-				if (!/^[./]/.test(id)) id = './' + id;
+				if (!/^[.\/]/.test(id)) id = './' + id;
 				return require(id);
 			}
 			: load;
@@ -35,7 +36,7 @@
 			throw new Error('could not create logger()');
 		}
 
-		quitter = process && process.exit ? process.exit.bind(process) : quit;
+		quitter = typeof process !== 'undefined' && process.exit ? process.exit.bind(process) : quit;
 		if (!quitter) {
 			throw new Error('could not create quitter()');
 		}
@@ -88,7 +89,7 @@
 		}
 		if (!config.paths.when && !config.packages.when) {
 			config.packages.when = {
-				location: 'support/when',
+				location: joinPaths(cramFolder, 'support/when'),
 				main: 'when'
 			};
 		}
@@ -262,17 +263,19 @@
 
 	function joinPaths (path1, path2) {
 		if (path2.substr(0, 2) == './') path2 = path2.substr(2);
-		if (path1 && !path1.substr(path1.length - 1) != '/') {
+		if (path1 && path1.substr(path1.length - 1) != '/') {
 			path1 += '/';
 		}
 		return path1 + path2;
 	}
 
 	function isJsonFile (filename) {
-		return /\.json$/.test(filename);
+		// parens to appease jshint
+		return (/\.json$/).test(filename);
 	}
 
 	function loadConfig (filename) {
+		/*jshint evil:true*/
 		var cfg;
 		if (isJsonFile(filename)) {
 			if (has('readFile')) {
@@ -391,7 +394,7 @@
 	function help () {
 		var options;
 		// TODO: auto-generate help string from config options and meta data
-		options = "\t-c, --config config_file\n\t-r, --root root_module_id\n\t-b, --baseurl base_folder\n\t-s, --src path_to_cram_src_folder\n\t-o, --output build_output_file";
+		options = '\t-c, --config config_file\n\t-r, --root root_module_id\n\t-b, --baseurl base_folder\n\t-s, --src path_to_cram_src_folder\n\t-o, --output build_output_file';
 		logger('cram, an AMD-compatible module concatenator. An element of cujo.js.');
 		logger();
 		logger('Usage:');
