@@ -119,6 +119,9 @@ define(/*=='curl/plugin/js',==*/ ['curl/_privileged'], function (priv) {
 		// the !options force us to cache ids in the plugin and provide normalize
 		'dynamic': true,
 
+		'plugin-builder': './builder/js',
+		'pluginBuilder': './builder/js',
+
 		'normalize': function (id, toAbsId, config) {
 			var end = id.indexOf('!');
 			return end >= 0 ? toAbsId(id.substr(0, end)) + id.substr(end) : toAbsId(id);

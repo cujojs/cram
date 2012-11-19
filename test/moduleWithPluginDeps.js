@@ -1,4 +1,4 @@
-define(['text!./templates/snippet.html', 'css!./tiny.css'], function (snippet) {
+define(['js!./notamodule.js!exports=notamodule', 'text!./templates/snippet.html', 'css!./tiny.css'], function (notamodule, snippet) {
 	var doc, temp, dest, node;
 	doc = window.document;
 	temp = doc.createElement('div');
