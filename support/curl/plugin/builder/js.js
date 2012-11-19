@@ -7,7 +7,6 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 define(['./jsEncode'], function (jsEncode) {
-			console.log('HERE');
 
 	return {
 
