@@ -85,7 +85,7 @@
 			config.packages = {};
 		}
 		if (!config.paths.curl && !config.packages.curl) {
-			config.paths.curl = joinPaths(cramFolder, 'support/curl');
+			config.paths.curl = joinPaths(cramFolder, 'support/curl/src/curl');
 		}
 		if (!config.paths.when && !config.packages.when) {
 			config.packages.when = {
@@ -97,7 +97,7 @@
 			config.paths.cram = cramFolder;
 		}
 
-		loader(config.paths.curl + '.js');
+		loader(joinPaths(config.paths.curl, '../../dist/curl-for-ssjs/curl.js'));
 		// TODO: we're assuming sync operation here. implement when() so
 		// we can operate in async environs such as browsers.
 		// curl global should be available now
