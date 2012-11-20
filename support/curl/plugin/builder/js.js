@@ -7,19 +7,25 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 define(['./jsEncode'], function (jsEncode) {
+	var stripOrderOptionRx;
+
+	stripOrderOptionRx = /!order/;
 
 	return {
 
 		normalize: function (resourceId, toAbsId) {
-			// remove options
-			return resourceId ? toAbsId(resourceId.split('!')[0]) : resourceId;
+			// Remove !order option.  It's not needed in a bundle.
+			// !exports option must be preserved so that it will be
+			// passed to the compile() method.
+			return resourceId
+				? toAbsId(resourceId.replace(stripOrderOptionRx, ''))
+				: resourceId;
 		},
 
 		compile: function (absId, req, io /*, config*/) {
 
-			var order, exportsPos, exports;
+			var exportsPos, exports;
 
-			order = absId.indexOf('!order') > 0; // can't be zero
 			exportsPos = absId.indexOf('!exports=');
 			exports = exportsPos > 0 && absId.substr(exportsPos + 9); // must be last option!
 
