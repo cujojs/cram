@@ -25,8 +25,8 @@
 <body>
 <p>use the following command lines to build js/tiny:</p>
 <ul class="tiny">
-	<li>rhino -O -1 bin/../js/cram.js --root "test-js/tiny" --config test/tinycfg.json</li>
-	<li>bin/cram.sh -e jsc -r "test-js/tiny" -c test/tinycfg.json</li>
+	<li>rhino -O -1 cram.js --main "test-js/tiny" --config test/tinycfg.json</li>
+	<li>node cram -m "test-js/tiny" -c test/tinycfg.json</li>
 </ul>
 <p>the above should be blue on yellow if the css! plugin worked</p>
 <p>there should be some additional text below this if the text! plugin worked</p>
