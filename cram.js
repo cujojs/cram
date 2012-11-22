@@ -14,7 +14,10 @@
 /*global environment:true*/
 'use strict';
 
-	var loader, logger, quitter, has, config, cramFolder, curl, undef;
+	var loader, logger, quitter, has, config, cramFolder, curl,
+		toString, undef;
+
+	toString = Object.prototype.toString;
 
 	try {
 
@@ -53,12 +56,11 @@
 		// load (and run) feature tests
 		// this declares has() function
 		has = simpleRequire(joinPaths(cramFolder, './lib/has'));
-		//has = simpleRequire(joinPaths(cramFolder, './lib/has'));
 
 		// bail now if we can't load text files since we can't read a json config.
 		// shell script should convert the config to a .js file / AMD module
 		// and re-run this file
-		if (!has('readFile') && !has('loadJson') && isJsonFile(args.configFile)) {
+		if (!has('readFile') && !has('loadJson') && args.configFiles.some(isJsonFile)) {
 			logger('Configuration file must be wrapped in define with this javascript engine.');
 			return;
 		}
@@ -69,12 +71,26 @@
 			loader(joinPaths(cramFolder, './lib/json2.js'));
 		}
 
-		// load configuration data
-		config = loadConfig(joinPaths(cramFolder, args.configFile));
-		if (args.baseUrl == '.') args.baseUrl = ''; // TODO: make this more robust
+		// grok run.js file, if specified.
+		// we're doing this before curl is loaded since it probably tells
+		// us where the desired curl.js is located.  If this becomes
+		// problematic, we could probably switch curl versions afterwards?
+		if (args.grok) {
+			config = grokRunjs(joinPaths(cramFolder, args.grok));
+		}
+
+		// merge and load all configuration data
+		args.configFiles = args.configFiles.map(function (filename) {
+			return joinPaths(cramFolder, filename);
+		});
+		config = mergeConfigs(config, args.configFiles);
+
+		// fill-in missing config data or override with command-line args
+		// TODO: make this more robust
+		if (args.baseUrl == '.') args.baseUrl = '';
 		config.baseUrl = joinPaths(args.baseUrl, config.baseUrl || '');
 		config.destUrl = args.destUrl || config.destUrl || '';
-		config.rootModule = args.rootModule || config.rootModule;
+		config.modules = args.modules || [config.main];
 
 		// create path to curl if it wasn't provided
 		// TODO: use packages here instead of paths (to set an example?)
@@ -128,8 +144,6 @@
 	catch (ex) {
 		fail(ex);
 	}
-
-	return;
 
 	function start (require, when, compile, link, getCtx, writer, reader) {
 		var ids, discovered, io, ctx;
@@ -227,12 +241,13 @@
 	function parseArgs (args) {
 		var optionMap, arg, option, result;
 		optionMap = {
-			'-r': 'rootModule',
-			'--root': 'rootModule',
+			'-m': 'modules',
+			'--main': 'modules',
 			'-b': 'baseUrl',
 			'--baseurl': 'baseUrl',
-			'-c': 'configFile',
-			'--config': 'configFile',
+			'--baseUrl': 'baseUrl',
+			'-c': 'configFiles',
+			'--config': 'configFiles',
 			'-o': 'destUrl',
 			'--output': 'destUrl',
 			'-s': 'cramFolder',
@@ -244,19 +259,43 @@
 		// defaults
 		result = {
 			baseUrl: '',
-			destUrl: ''
+			destUrl: '',
+			configFiles: [],
+			modules: []
 		};
 		if (!args.length) help();
 		// pop off an arg and compare it to list of known option names
 		while ((arg = args.shift())) {
+
 			option = optionMap[arg];
-			if (option == 'help') {
-				help();
+
+			// check if the first arg is a run.js file to grok
+			if (arg.charAt(0) != '-' && !('grok' in result)) {
+				result.grok = arg;
 			}
-			else if (!option) {
-				throw new Error('unknown option: ' + arg);
+			else {
+				result.grok = false;
+				// check if arg is a config file or option
+				if (arg.charAt(0) != '-') {
+					// this must be a config file
+					result.configFiles.push(arg);
+				}
+				else if (option == 'help') {
+					help();
+				}
+				else if (!option) {
+					throw new Error('unknown option: ' + arg);
+				}
+				else if (result[option].push) {
+					// array. push next arg onto array
+					result[option].push(args.shift());
+				}
+				else {
+					// grab next arg as value of option
+					result[option] = args.shift();
+				}
 			}
-			result[option] = args.shift(); // grab next arg
+
 		}
 		return result;
 	}
@@ -274,6 +313,52 @@
 		return (/\.json$/).test(filename);
 	}
 
+	function grokRunjs (filename) {
+		var src, grok, results, config;
+
+		src = loader(filename);
+		grok = simpleRequire(joinPaths(cramFolder, 'lib/grok/runjs'));
+
+		results = grok(src);
+
+		if (results.warnings && results.warnings.length) {
+			results.warnings.forEach(logger);
+		}
+		if (results.error) fail(results.error);
+
+		config = results.config;
+		config.modules = results.includes;
+
+		return config;
+	}
+
+	function mergeConfigs (baseCfg, configFiles) {
+		var base, i, len, cfg, p;
+		base = baseCfg || {};
+		for (i = 0, len = configFiles.length; i < len; i++) {
+			cfg = loadConfig(configFiles[i]);
+			base = mergeObjects(base, cfg);
+		}
+		return base;
+	}
+
+	function mergeObjects (base, ext) {
+		var p;
+		for (p in ext) {
+			if (isType(base[p], 'Object') || isType(base[p], 'Array')) {
+				base[p] = mergeObjects(base[p], ext[p]);
+			}
+			else {
+				base[p] = ext[p];
+			}
+		}
+		return base;
+	}
+
+	function isType (obj, type) {
+		return toString.call(obj).slice(8, -1) == type;
+	}
+
 	function loadConfig (filename) {
 		/*jshint evil:true*/
 		var cfg;
@@ -287,8 +372,8 @@
 			}
 		}
 		else {
-			// TODO: extract config from a text file using a regexp...
-			throw new Error('can\'t read config from a non-json file:' + filename);
+			// assume it's an AMD file with no deps
+			cfg = simpleRequire(filename);
 		}
 		return cfg;
 	}
@@ -312,81 +397,36 @@
 
 	function simpleRequire (url) {
 		var amdModule, cjsModule, simpleDefine;
+		// TODO: implement sync XHR or refactor this file to be able to fetch async
 		// Create a temporary define function that's sufficient to load a
 		// simplified AMD or UMD module. This define must run sync and can only
 		// have a definition function, not a module id or dependencies.
 		if (!globalDefine) {
-			simpleDefine = global.define = function (id, definitionFunction) {
-				// allow for named modules, but not ones with deps
-				if (typeof id == 'function') definitionFunction = id;
-				// get first module declared (TODO: fix hackishness?)
-				if (!amdModule) amdModule = definitionFunction();
+			simpleDefine = global.define = function (id, factory) {
+				// only get first module declared in file
+				if (!amdModule) {
+					// grab last argument as factory or module
+					factory = arguments[arguments.length - 1];
+					amdModule = typeof factory == 'function'
+						? factory()
+						: factory;
+				}
 			};
 			simpleDefine.amd = {};
 		}
-		cjsModule = loader(url + '.js');
-		if (simpleDefine == global.define) {
-			global.define = undef;
+		try {
+			cjsModule = loader(url + '.js');
+		}
+		finally {
+			if (simpleDefine == global.define) {
+				global.define = undef;
+			}
 		}
 		return amdModule || cjsModule;
 	}
 
-//	function analyze (config) {
-//		var i, len, rootId, includes, excludes, resolver, analyzer,
-//			loader, moduleIds;
-//
-//		rootId = config.rootModule;
-//		moduleIds = [];
-//		includes = config.preloads;
-//		excludes = [];
-//
-//		resolver = new Resolver('', config);
-//		analyzer = new Analyzer();
-//		loader = new Loader();
-//		analyzer.loader = loader;
-//		analyzer.fetcher = fetcher;
-//		analyzer.Resolver = Resolver;
-//		analyzer.resolver = analyzer.loader.resolver = resolver;
-//
-//		if (includes) {
-//			for (i = 0, len = includes.length; i < len; i++) {
-//				analyzer.scanForIds = false;
-//				moduleIds = moduleIds.concat(analyzer.analyze(includes[i], '', config));
-//				analyzer.scanForIds = true;
-//				excludes = excludes.concat(analyzer.analyze(includes[i], '', config));
-//			}
-//		}
-////print('excludes:', excludes.map(function (item) { return item.absId; }));
-//		config._foundModules = excludes.map(function (info) { return info.absId; });
-//
-//		analyzer.scanForIds = false;
-//		moduleIds = moduleIds.concat(analyzer.analyze(rootId, '', config));
-//
-//		return moduleIds;
-//
-//	}
-//
-//	function build (moduleInfo, config) {
-//		var builder, excludes;
-//
-//		builder = new Builder();
-//		builder.Resolver = Resolver;
-//		builder.loader = new Loader();
-//		builder.fetcher = fetcher.fetch;
-//		builder.writer = writer.getWriter(config.destUrl);
-//
-//		excludes = config.excludeModules || [];
-//		if (config._foundModules) {
-//			excludes = excludes.concat(config._foundModules);
-//		}
-//		builder.excludes = excludes;
-//
-//		builder.build(moduleInfo, config);
-//
-//	}
-
 	function fail (ex) {
-		logger('cram failed: ', ex && ex.message);
+		logger('cram failed: ', ex && ex.message || ex);
 		if (ex && ex.stack) logger(ex.stack);
 		quitter(1);
 	}
@@ -394,14 +434,21 @@
 	function help () {
 		var options;
 		// TODO: auto-generate help string from config options and meta data
-		options = '\t-c, --config config_file\n\t-r, --root root_module_id\n\t-b, --baseurl base_folder\n\t-s, --src path_to_cram_src_folder\n\t-o, --output build_output_file';
+		options = '\t-c, --config config_file\n\t-m, --module module_id\n\t-b, --baseurl base_folder\n\t-s, --src path_to_cram_src_folder\n\t-o, --output build_output_file';
 		logger('cram, an AMD-compatible module concatenator. An element of cujo.js.');
 		logger();
 		logger('Usage:');
-		logger('\tnode cram.js options');
+		logger('\t\tnode cram.js [options]');
+		logger('\tor\tringo cram.js [options]');
+		logger('\tor\trhino cram.js [options]');
 		logger();
 		logger('Options:');
 		logger(options);
+		logger();
+		logger('Auto-grok run.js (app bootstrap) file:');
+		logger('\t\tnode cram.js run.js build_override.json [options]');
+		logger('\tor\tringo cram.js run.js build_override.json [options]');
+		logger('\tor\trhino cram.js run.js build_override.json [options]');
 		logger();
 		logger('More help can be found at http://cujojs.com/');
 		quitter();
@@ -414,5 +461,5 @@
 ));
 
 // run from cram folder:
-// rhino -O -1 bin/../cram.js -c test/tinycfg.json -r js/tiny -b . -o test/output/built.js
-// java org.mozilla.javascript.tools.debugger.Main bin/../cram.js -c test/tinycfg.json -r js/tiny -b . -o test/output/built.js
+// rhino -O -1 bin/../cram.js -c test/tinycfg.json -m js/tiny -b . -o test/output/built.js
+// java org.mozilla.javascript.tools.debugger.Main bin/../cram.js -c test/tinycfg.json -m js/tiny -b . -o test/output/built.js
