@@ -90,7 +90,7 @@
 		if (args.baseUrl == '.') args.baseUrl = '';
 		config.baseUrl = joinPaths(args.baseUrl, config.baseUrl || '');
 		config.destUrl = args.destUrl || config.destUrl || '';
-		config.modules = args.modules || [config.main];
+		config.includes = args.includes || [config.main];
 
 		// create path to curl if it wasn't provided
 		// TODO: use packages here instead of paths (to set an example?)
@@ -152,7 +152,6 @@
 
 			ids = config.preloads || [];
 			if (config.includes) ids = ids.concat(config.includes);
-			ids = ids.concat(config.rootModule);
 
 			// TODO: collect, but exclude "config.excludes" from output
 
@@ -241,8 +240,8 @@
 	function parseArgs (args) {
 		var optionMap, arg, option, result;
 		optionMap = {
-			'-m': 'modules',
-			'--main': 'modules',
+			'-m': 'includes',
+			'--main': 'includes',
 			'-b': 'baseUrl',
 			'--baseurl': 'baseUrl',
 			'--baseUrl': 'baseUrl',
@@ -261,7 +260,7 @@
 			baseUrl: '',
 			destUrl: '',
 			configFiles: [],
-			modules: []
+			includes: []
 		};
 		if (!args.length) help();
 		// pop off an arg and compare it to list of known option names
@@ -327,7 +326,7 @@
 		if (results.error) fail(results.error);
 
 		config = results.config;
-		config.modules = results.includes;
+		config.includes = results.includes;
 
 		return config;
 	}
