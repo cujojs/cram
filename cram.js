@@ -71,13 +71,18 @@
 			loader(joinPaths(cramFolder, './lib/json2.js'));
 		}
 
-		// grok run.js file, if specified.
-		// we're doing this before curl is loaded since it probably tells
-		// us where the desired curl.js is located.  If this becomes
-		// problematic, we could probably switch curl versions afterwards?
-		if (args.grok) {
-			config = grokRunjs(joinPaths(cramFolder, args.grok));
-		}
+		config = {
+			paths: {},
+			packages: {}
+		};
+
+		// create default mappings to curl, cram, etc.
+		config.paths.curl = joinPaths(cramFolder, 'support/curl/src/curl');
+		config.paths.cram = cramFolder;
+		config.packages.when = {
+			location: joinPaths(cramFolder, 'support/when'),
+			main: 'when'
+		};
 
 		// merge and load all configuration data
 		args.configFiles = args.configFiles.map(function (filename) {
@@ -91,27 +96,6 @@
 		config.baseUrl = joinPaths(args.baseUrl, config.baseUrl || '');
 		config.destUrl = args.destUrl || config.destUrl || '';
 		config.includes = args.includes || [config.main];
-
-		// create path to curl if it wasn't provided
-		// TODO: use packages here instead of paths (to set an example?)
-		if (!config.paths) {
-			config.paths = {};
-		}
-		if (!config.packages) {
-			config.packages = {};
-		}
-		if (!config.paths.curl && !config.packages.curl) {
-			config.paths.curl = joinPaths(cramFolder, 'support/curl/src/curl');
-		}
-		if (!config.paths.when && !config.packages.when) {
-			config.packages.when = {
-				location: joinPaths(cramFolder, 'support/when'),
-				main: 'when'
-			};
-		}
-		if (!config.paths.cram && !config.packages.cram) {
-			config.paths.cram = cramFolder;
-		}
 
 		loader(joinPaths(config.paths.curl, '../../dist/curl-for-ssjs/curl.js'));
 		// TODO: we're assuming sync operation here. implement when() so
@@ -133,6 +117,7 @@
 				'cram/lib/compile',
 				'cram/lib/link',
 				'cram/lib/ctx',
+				'cram/lib/grok',
 				has('java') ? 'cram/lib/io/javaFileWriter' : 'cram/lib/io/nodeFileWriter',
 				has('readFile') ? 'cram/lib/io/readFileFileReader' : 'cram/lib/io/nodeFileReader'
 			],
@@ -145,68 +130,95 @@
 		fail(ex);
 	}
 
-	function start (require, when, compile, link, getCtx, writer, reader) {
-		var ids, discovered, io, ctx;
+	function start (require, when, compile, link, getCtx, grok, writer, reader) {
+		var ids, discovered, io;
 
-		try {
-
-			ids = config.preloads || [];
-			if (config.includes) ids = ids.concat(config.includes);
-
-			// TODO: collect, but exclude "config.excludes" from output
-
-			// collect modules encountered, in order
-			// dual array/hashmap
-			discovered = [];
-
-			// compile phase:
-			// transform it to AMD, if necessary
-			// scan for dependencies, etc.
-			// cache AST here
+		// grok run.js file, if specified.
+		// we're doing this after curl is loaded since we need to load
+		// the appropriate file reader.
+		// TODO: this isn't quite right. figure out exactly when we need to ensure run-time vs build-time configs need to be used (and when to mix)
+		if (args.grok) {
 			io = {
-				readModule: function (ctx) {
+				readFile: function (filename) {
 					var d, r;
 					d = when.defer();
-					r = reader.getReader(ctx.withExt(ctx.toUrl(ctx.absId)));
+					r = reader.getReader(filename);
 					r(d.resolve, d.reject);
 					return d.promise;
 				},
-				writeModule: function (ctx, contents) {
-					var d, w;
-					d = when.defer();
-					w = writer.getWriter('.cram/linked/main.js');
-					w(contents, d.resolve, d.reject);
-					return d.promise;
-				},
-				readMeta: function (ctx) {
-					var d, r;
-					d = when.defer();
-					r = reader.getReader(joinPaths('.cram/meta', ctx.absId));
-					r(d.resolve, d.reject);
-					return d.promise;
-				},
-				writeMeta: function (ctx, contents) {
-					var d, w;
-					d = when.defer();
-					w = writer.getWriter(joinPaths('.cram/meta', ctx.absId));
-					w(contents, d.resolve, d.reject);
-					return d.promise;
-				},
-				collect: collect
-			};
+				warn: function (msg) { logger('warning: ' + msg); },
+				error: fail
+			}
+		}
 
-			ctx = getCtx('', config);
-
-			compile(ids, io, ctx).then(
-				function () {
-					return link(discovered, io, ctx);
+		when(args.grok && grok(io, args.grok),
+			function (runJsCfg) {
+				if (runJsCfg) {
+					config = mergeConfigs(runJsCfg, config);
+					// TODO: fix curl reconfig:
+					curl(config);
 				}
-			).then(cleanup, fail);
+			}
+		).then(
+			function () {
+				ids = config.preloads || [];
+				if (config.includes) ids = ids.concat(config.includes);
 
-		}
-		catch (ex) {
-			fail(ex);
-		}
+				// TODO: collect, but exclude "config.excludes" from output
+
+				// collect modules encountered, in order
+				// dual array/hashmap
+				discovered = [];
+
+				// compile phase:
+				// transform it to AMD, if necessary
+				// scan for dependencies, etc.
+				// cache AST here
+				io = {
+					readModule: function (ctx) {
+						var d, r;
+						d = when.defer();
+						r = reader.getReader(ctx.withExt(ctx.toUrl(ctx.absId)));
+						r(d.resolve, d.reject);
+						return d.promise;
+					},
+					writeModule: function (ctx, contents) {
+						var d, w;
+						d = when.defer();
+						w = writer.getWriter('.cram/linked/main.js');
+						w(contents, d.resolve, d.reject);
+						return d.promise;
+					},
+					readMeta: function (ctx) {
+						var d, r;
+						d = when.defer();
+						r = reader.getReader(joinPaths('.cram/meta', ctx.absId));
+						r(d.resolve, d.reject);
+						return d.promise;
+					},
+					writeMeta: function (ctx, contents) {
+						var d, w;
+						d = when.defer();
+						w = writer.getWriter(joinPaths('.cram/meta', ctx.absId));
+						w(contents, d.resolve, d.reject);
+						return d.promise;
+					},
+					collect: collect
+				};
+			}
+		).then(
+			function () {
+				return getCtx('', config);
+			}
+		).then(
+			function (ctx) {
+				return compile(ids, io, ctx);
+			}
+		).then(
+			function () {
+				return link(discovered, io, ctx);
+			}
+		).then(cleanup, fail);
 
 		function cleanup () {
 			if (writer.closeAll) {
@@ -273,7 +285,7 @@
 				result.grok = arg;
 			}
 			else {
-				result.grok = false;
+				if (!('grok' in result)) result.grok = false;
 				// check if arg is a config file or option
 				if (arg.charAt(0) != '-') {
 					// this must be a config file
@@ -312,27 +324,8 @@
 		return (/\.json$/).test(filename);
 	}
 
-	function grokRunjs (filename) {
-		var src, grok, results, config;
-
-		src = loader(filename);
-		grok = simpleRequire(joinPaths(cramFolder, 'lib/grok/runjs'));
-
-		results = grok(src);
-
-		if (results.warnings && results.warnings.length) {
-			results.warnings.forEach(logger);
-		}
-		if (results.error) fail(results.error);
-
-		config = results.config;
-		config.includes = results.includes;
-
-		return config;
-	}
-
 	function mergeConfigs (baseCfg, configFiles) {
-		var base, i, len, cfg, p;
+		var base, i, len, cfg;
 		base = baseCfg || {};
 		for (i = 0, len = configFiles.length; i < len; i++) {
 			cfg = loadConfig(configFiles[i]);
