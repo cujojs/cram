@@ -148,6 +148,7 @@
 		if (args.configFiles) {
 			configs = args.configFiles.map(
 				function (file) {
+					// TODO: create a curl/plugin/json amd plugin (and build plugin)
 					if (isJsonFile(file)) file = 'json!' + file;
 					return curl([file]);
 				}
