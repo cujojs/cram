@@ -205,6 +205,13 @@
 				// scan for dependencies, etc.
 				// cache AST here
 				io = {
+					readFile: function (filename) {
+						var d, r;
+						d = when.defer();
+						r = reader.getReader(filename);
+						r(d.resolve, d.reject);
+						return d.promise;
+					},
 					readModule: function (ctx) {
 						var d, r;
 						d = when.defer();
