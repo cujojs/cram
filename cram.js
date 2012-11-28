@@ -84,18 +84,11 @@
 			main: 'when'
 		};
 
-		// merge and load all configuration data
-		args.configFiles = args.configFiles.map(function (filename) {
-			return joinPaths(cramFolder, filename);
-		});
-		config = mergeConfigs(config, args.configFiles);
-
 		// fill-in missing config data or override with command-line args
 		// TODO: make this more robust
 		if (args.baseUrl == '.') args.baseUrl = '';
 		config.baseUrl = joinPaths(args.baseUrl, config.baseUrl || '');
 		config.destUrl = args.destUrl || config.destUrl || '';
-		config.includes = args.includes || [config.main];
 
 		loader(joinPaths(config.paths.curl, '../../dist/curl-for-ssjs/curl.js'));
 		// TODO: we're assuming sync operation here. implement when() so
@@ -131,38 +124,75 @@
 	}
 
 	function start (require, when, compile, link, getCtx, grok, writer, reader) {
-		var ids, discovered, io;
+		var grokked, configs, ids, discovered, io;
 
-		// grok run.js file, if specified.
-		// we're doing this after curl is loaded since we need to load
-		// the appropriate file reader.
-		// TODO: this isn't quite right. figure out exactly when we need to ensure run-time vs build-time configs need to be used (and when to mix)
+		configs = [];
+
 		if (args.grok) {
-			io = {
-				readFile: function (filename) {
-					var d, r;
-					d = when.defer();
-					r = reader.getReader(filename);
-					r(d.resolve, d.reject);
-					return d.promise;
+			grokked = grok(
+				{
+					readFile: function (filename) {
+						var d, r;
+						d = when.defer();
+						r = reader.getReader(filename);
+						r(d.resolve, d.reject);
+						return d.promise;
+					},
+					warn: function (msg) { logger('warning: ' + msg); },
+					error: fail
 				},
-				warn: function (msg) { logger('warning: ' + msg); },
-				error: fail
-			}
+				args.grok
+			);
 		}
 
-		when(args.grok && grok(io, args.grok),
-			function (runJsCfg) {
-				if (runJsCfg) {
-					config = mergeConfigs(runJsCfg, config);
-					// TODO: fix curl reconfig:
-					curl(config);
+		if (args.configFiles) {
+			configs = args.configFiles.map(
+				function (file) {
+					if (isJsonFile(file)) file = 'json!' + file;
+					return curl([file]);
 				}
+			);
+		}
+
+		when.reduce(
+			configs,
+			function (results, overrides) {
+				// merge configs
+				results.config = mergeConfigs(results.config, overrides);
+				return results;
+			},
+			grokked
+		).then(
+			function (results) {
+				var config;
+
+				config = results.config;
+
+				if (!results.includes) results.includes = [];
+
+				// remove things that curl will try to auto-load
+				if (config.main) {
+					results.includes = results.includes.concat(config.main);
+					delete config.main;
+				}
+				if (config.preloads) {
+					results.includes = config.preloads.concat(results.includes);
+					delete config.preloads;
+				}
+
+				// fix baseUrl (node.js doesn't know how to find anything
+				// that isn't in node_modules or is an absolute file
+				// reference).
+				// TODO: sniff the need for this hack, somehow
+				config.baseUrl = joinPaths(cramFolder, args.baseUrl, config.baseUrl);
+
+				// configure curl
+				curl(config);
+				return results;
 			}
 		).then(
-			function () {
-				ids = config.preloads || [];
-				if (config.includes) ids = ids.concat(config.includes);
+			function (results) {
+				ids = results.includes;
 
 				// TODO: collect, but exclude "config.excludes" from output
 
@@ -205,17 +235,20 @@
 					},
 					collect: collect
 				};
+				return results.config;
 			}
 		).then(
-			function () {
+			function (config) {
 				return getCtx('', config);
 			}
 		).then(
 			function (ctx) {
-				return compile(ids, io, ctx);
+				return when(compile(ids, io, ctx), function () {
+					return ctx;
+				});
 			}
 		).then(
-			function () {
+			function (ctx) {
 				return link(discovered, io, ctx);
 			}
 		).then(cleanup, fail);
@@ -312,11 +345,19 @@
 	}
 
 	function joinPaths (path1, path2) {
-		if (path2.substr(0, 2) == './') path2 = path2.substr(2);
-		if (path1 && path1.substr(path1.length - 1) != '/') {
-			path1 += '/';
+		var args;
+
+		args = Array.prototype.slice.apply(arguments);
+
+		return args.reduce(joinTwo, '');
+
+		function joinTwo (path1, path2) {
+			if (path2.substr(0, 2) == './') path2 = path2.substr(2);
+			if (path1 && path1.substr(path1.length - 1) != '/') {
+				path1 += '/';
+			}
+			return path1 + path2;
 		}
-		return path1 + path2;
 	}
 
 	function isJsonFile (filename) {
@@ -337,7 +378,10 @@
 	function mergeObjects (base, ext) {
 		var p;
 		for (p in ext) {
-			if (isType(base[p], 'Object') || isType(base[p], 'Array')) {
+			if (isType(base[p], 'Array')) {
+				base[p] = mergeArrays(base[p], ext[p]);
+			}
+			if (isType(base[p], 'Object')) {
 				base[p] = mergeObjects(base[p], ext[p]);
 			}
 			else {
@@ -345,6 +389,36 @@
 			}
 		}
 		return base;
+	}
+
+	function mergeArrays (base, ext, identity) {
+		var merged, prev;
+
+		if (!identity) identity = defaultIdentity;
+		merged = (base || []).concat(ext || []).sort(sort);
+
+		return merged.reduce(function (result, item) {
+			if (identity(item) != identity(prev)) result.push(item);
+			prev = item;
+			return result;
+		}, []);
+
+		function defaultIdentity (it) {
+			if (isType(a, 'Object')) {
+				return it.id || it.name;
+			}
+			else {
+				return it;
+			}
+		}
+
+		function sort (a, b) {
+			var ida, idb;
+			ida = identity(a);
+			idb = identity(b);
+			return ida == idb ? 0 ? ida < idb : -1 : 1;
+		}
+
 	}
 
 	function isType (obj, type) {
