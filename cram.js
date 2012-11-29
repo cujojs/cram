@@ -314,7 +314,9 @@
 			configFiles: [],
 			includes: []
 		};
-		if (!args.length) help();
+		if (!args.length) {
+			help(logger, optionMap); quitter();
+		}
 		// pop off an arg and compare it to list of known option names
 		while ((arg = args.shift())) {
 
