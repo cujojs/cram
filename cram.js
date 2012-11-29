@@ -21,8 +21,6 @@
 
 	try {
 
-		// TODO: ensure all load/require operations can be async
-
 		// ensure we have a loader method
 		loader = typeof require == 'function'
 			? function (id) {
@@ -85,7 +83,6 @@
 		};
 
 		// fill-in missing config data or override with command-line args
-		// TODO: make this more robust
 		if (args.baseUrl == '.') args.baseUrl = '';
 		config.baseUrl = joinPaths(args.baseUrl, config.baseUrl || '');
 		config.destUrl = args.destUrl || config.destUrl || '';
@@ -93,6 +90,8 @@
 		loader(joinPaths(config.paths.curl, '../../dist/curl-for-ssjs/curl.js'));
 		// TODO: we're assuming sync operation here. implement when() so
 		// we can operate in async environs such as browsers.
+		// either that or assume browser has pre-loaded the necessary files.
+
 		// curl global should be available now
 		if (!global.curl) {
 			throw new Error('curl() was not loaded.');
@@ -148,7 +147,6 @@
 		if (args.configFiles) {
 			configs = args.configFiles.map(
 				function (file) {
-					// TODO: create a curl/plugin/json amd plugin (and build plugin)
 					if (isJsonFile(file)) file = 'json!' + file;
 					return curl([file]);
 				}
@@ -471,7 +469,6 @@
 
 	function simpleRequire (url) {
 		var amdModule, cjsModule, simpleDefine;
-		// TODO: implement sync XHR or refactor this file to be able to fetch async
 		// Create a temporary define function that's sufficient to load a
 		// simplified AMD or UMD module. This define must run sync and can only
 		// have a definition function, not a module id or dependencies.
@@ -507,7 +504,8 @@
 
 	function help () {
 		var options;
-		// TODO: auto-generate help string from config options and meta data
+		// it'd be nice if we could auto-generate help string from
+		// config options and meta data.
 		options = '\t-c, --config config_file\n\t-m, --module module_id\n\t-b, --baseurl base_folder\n\t-s, --src path_to_cram_src_folder\n\t-o, --output build_output_file';
 		logger('cram, an AMD-compatible module concatenator. An element of cujo.js.');
 		logger();
@@ -533,7 +531,3 @@
 	typeof define == 'function' && define.amd && define,
 	process && process.argv ? process.argv.slice(2) : Array.prototype.slice.apply(arguments)
 ));
-
-// run from cram folder:
-// rhino -O -1 bin/../cram.js -c test/tinycfg.json -m js/tiny -b . -o test/output/built.js
-// java org.mozilla.javascript.tools.debugger.Main bin/../cram.js -c test/tinycfg.json -m js/tiny -b . -o test/output/built.js
