@@ -293,6 +293,7 @@
 		optionMap = {
 			'-m': 'includes',
 			'--main': 'includes',
+			'--include': 'includes',
 			'-b': 'baseUrl',
 			'--baseurl': 'baseUrl',
 			'--baseUrl': 'baseUrl',
