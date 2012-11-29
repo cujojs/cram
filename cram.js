@@ -221,7 +221,7 @@
 					writeModule: function (ctx, contents) {
 						var d, w;
 						d = when.defer();
-						w = writer.getWriter('.cram/linked/main.js');
+						w = writer.getWriter(args.destUrl || '.cram/linked/main.js');
 						w(contents, d.resolve, d.reject);
 						return d.promise;
 					},
