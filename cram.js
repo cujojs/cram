@@ -331,7 +331,7 @@
 					result.configFiles.push(arg);
 				}
 				else if (option == 'help') {
-					help();
+					help(logger, optionMap); quitter();
 				}
 				else if (!option) {
 					throw new Error('unknown option: ' + arg);
@@ -502,28 +502,75 @@
 		quitter(1);
 	}
 
-	function help () {
-		var options;
-		// it'd be nice if we could auto-generate help string from
-		// config options and meta data.
-		options = '\t-c, --config config_file\n\t-m, --module module_id\n\t-b, --baseurl base_folder\n\t-s, --src path_to_cram_src_folder\n\t-o, --output build_output_file';
-		logger('cram, an AMD-compatible module concatenator. An element of cujo.js.');
-		logger();
-		logger('Usage:');
-		logger('\t\tnode cram.js [options]');
-		logger('\tor\tringo cram.js [options]');
-		logger('\tor\trhino cram.js [options]');
-		logger();
-		logger('Options:');
-		logger(options);
-		logger();
-		logger('Auto-grok run.js (app bootstrap) file:');
-		logger('\t\tnode cram.js run.js build_override.json [options]');
-		logger('\tor\tringo cram.js run.js build_override.json [options]');
-		logger('\tor\trhino cram.js run.js build_override.json [options]');
-		logger();
-		logger('More help can be found at http://cujojs.com/');
-		quitter();
+	function help (write, optionsMap) {
+		var skipLine, header, usage, autoGrok, footer, multiOptionText, helpMap;
+
+		skipLine ='\n\n';
+		header = 'cram, an AMD-compatible module concatenator. An element of cujo.js.';
+		usage = 'Usage:\n\t\t`node cram.js [options]`\n\tor\t`ringo cram.js [options]`\n\tor\t`rhino cram.js [options]`';
+		autoGrok = 'Auto-grok run.js (app bootstrap) file:\n\t\t`node cram.js run.js build_override.json [options]`\n\tor\t`ringo cram.js run.js build_override.json [options]`\n\tor\t`rhino cram.js run.js build_override.json [options]`';
+		footer = 'More help can be found at http://cujojs.com/';
+		multiOptionText = 'You may specify more than one by repeating this option.';
+
+		helpMap = {
+			'help': {
+				help: 'provides this help message.'
+			},
+			'includes': {
+				help: 'includes the following file into the bundle.\n' + multiOptionText
+			},
+			// TODO: rename this to something less confusing
+			'baseUrl': {
+				help: 'specifies the relative path between the web app\'s bootstrap html page and \nthe current directory.'
+			},
+			'configFiles': {
+				help: 'specifies an AMD configuration file. \n' + multiOptionText
+			},
+			'destUrl': {
+				help: 'specifies the output folder for the generated bundle(s).'
+			},
+			'cramFolder': {
+				help: 'tells cram where its source files are. [needed for Rhino?]'
+			}
+		};
+
+		helpMap = fillHelpMap(helpMap, optionsMap);
+
+		write(
+			header + skipLine +
+			usage + skipLine +
+			autoGrok + skipLine +
+			helpMapToText(helpMap) + skipLine +
+			footer
+		);
+
+		function fillHelpMap (helpMap, optionsMap) {
+			var p, option, helpItem;
+
+			for (p in optionsMap) {
+				option = optionsMap[p];
+				helpItem = helpMap[option];
+				if (helpItem) {
+					if (!helpItem.commands) helpItem.commands = [];
+					helpItem.commands.push(p);
+				}
+			}
+
+			return helpMap;
+		}
+
+		function helpMapToText (helpMap) {
+			var output, p;
+			output = 'Options:\n';
+			for (p in helpMap) {
+				// options line
+				output += '\t' + helpMap[p].commands.join(' ') + '\n';
+				// indented, descriptive text
+				output += '\t\t' + helpMap[p].help.replace(/\n/, '\n\t\t') + '\n';
+			}
+			return output;
+		}
+
 	}
 
 }(
