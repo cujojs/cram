@@ -23,9 +23,9 @@
 
 		// ensure we have a loader method
 		loader = typeof require == 'function'
-			? function (id) {
-				if (!/^[.\/]/.test(id)) id = './' + id;
-				return require(id);
+			? function (path) {
+				if (!/^[.\/]/.test(path)) path = './' + path;
+				return require(path);
 			}
 			: load;
 		if (!loader) {
@@ -46,7 +46,11 @@
 		args = parseArgs(args);
 
 		// find cram folder (the folder with all of the javascript modules)
-		cramFolder = args.cramFolder || cramDir();
+		cramFolder = args.cramFolder;
+		if (cramFolder && /^\.\.\//.test(cramFolder)) {
+			cramFolder = joinPaths(currDir(), cramFolder);
+		}
+		if (!cramFolder) cramFolder = cramDir();
 		if (!cramFolder) {
 			throw new Error('Cannot find cram source folder with this javascript engine. Use --src path_to_cram_js_folder.');
 		}
@@ -339,7 +343,7 @@
 				else if (!option) {
 					throw new Error('unknown option: ' + arg);
 				}
-				else if (result[option].push) {
+				else if (result[option] && result[option].push) {
 					// array. push next arg onto array
 					result[option].push(args.shift());
 				}
@@ -458,16 +462,25 @@
 		// find the folder with all of the js modules in it!
 		// we're sniffing for features here instead of in has.js
 		// since this needs to run first so we can find has.js!
+		curdir = currDir();
+		pos = curdir.indexOf('/cram');
+		if (pos >= 0) {
+			return curdir.substring(0, pos + 5);
+		}
+	}
+
+	function currDir () {
+		var curdir;
+		// find the folder with all of the js modules in it!
+		// we're sniffing for features here instead of in has.js
+		// since this needs to run first so we can find has.js!
 		curdir = typeof environment != 'undefined' && 'user.dir' in environment
 			? environment['user.dir']
 			: typeof process != 'undefined' && process.cwd && process.cwd();
 		if (curdir == undef) {
 			throw new Error('Could not determine current working directory.');
 		}
-		pos = curdir.indexOf('/cram');
-		if (pos >= 0) {
-			return curdir.substring(0, pos + 5);
-		}
+		return curdir;
 	}
 
 	function simpleRequire (url) {
