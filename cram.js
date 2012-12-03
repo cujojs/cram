@@ -173,7 +173,7 @@
 
 				if (!results.includes) results.includes = [];
 
-				if(!results.baseUrl) results.baseUrl = '';
+				if(!config.baseUrl) config.baseUrl = '';
 
 				// remove things that curl will try to auto-load
 				if (config.main) {
