@@ -15,29 +15,14 @@ define(function (require) {
 /*global environment:true*/
 'use strict';
 
-	var loader, logger, quitter, has, config, cramFolder, curl,
+	var quitter, has, config, cramFolder, curl,
 		toString, undef;
 
 	toString = Object.prototype.toString;
 
 	try {
 
-		// ensure we have a loader method
-		loader = typeof require == 'function'
-			? function (path) {
-				if (!/^[.\/]/.test(path)) path = './' + path;
-				return require(path);
-			}
-			: load;
-		if (!loader) {
-			throw new Error('could not create loader()');
-		}
-
-		logger = typeof console != 'undefined' ? console.log.bind(console) : print;
-		if (!logger) {
-			throw new Error('could not create logger()');
-		}
-
+		// TODO: remove the need for quitter()
 		quitter = typeof process !== 'undefined' && process.exit ? process.exit.bind(process) : quit;
 		if (!quitter) {
 			throw new Error('could not create quitter()');
@@ -64,14 +49,14 @@ define(function (require) {
 		// shell script should convert the config to a .js file / AMD module
 		// and re-run this file
 		if (!has('readFile') && !has('loadJson') && args.configFiles.some(isJsonFile)) {
-			logger('Configuration file must be wrapped in define with this javascript engine.');
+			console.log('Configuration file must be wrapped in define with this javascript engine.');
 			return;
 		}
 
 		// load appropriate modules according to the environment
 		if (!has('json')) {
 			// json2.js is not a module. it's plain old js
-			loader(joinPaths(cramFolder, './lib/json2.js'));
+			globalLoader(joinPaths(cramFolder, './lib/json2.js'));
 		}
 
 		config = {
@@ -92,7 +77,7 @@ define(function (require) {
 		config.baseUrl = joinPaths(args.baseUrl, config.baseUrl || '');
 		config.destUrl = args.destUrl || config.destUrl || '';
 
-		loader(joinPaths(config.paths.curl, '../../dist/curl-for-ssjs/curl.js'));
+		globalLoader(joinPaths(config.paths.curl, '../../dist/curl-for-ssjs/curl.js'));
 		// TODO: we're assuming sync operation here. implement when() so
 		// we can operate in async environs such as browsers.
 		// either that or assume browser has pre-loaded the necessary files.
@@ -142,7 +127,7 @@ define(function (require) {
 						r(d.resolve, d.reject);
 						return d.promise;
 					},
-					warn: function (msg) { logger('warning: ' + msg); },
+					warn: function (msg) { console.log('warning: ' + msg); },
 					error: fail
 				},
 				args.grok
@@ -322,7 +307,7 @@ define(function (require) {
 			includes: []
 		};
 		if (!args.length) {
-			help(logger, optionMap); quitter();
+			help(console.log.bind(console), optionMap); quitter();
 		}
 		// pop off an arg and compare it to list of known option names
 		while ((arg = args.shift())) {
@@ -341,7 +326,7 @@ define(function (require) {
 					result.configFiles.push(arg);
 				}
 				else if (option == 'help') {
-					help(logger, optionMap); quitter();
+					help(console.log.bind(console), optionMap); quitter();
 				}
 				else if (!option) {
 					throw new Error('unknown option: ' + arg);
@@ -450,7 +435,7 @@ define(function (require) {
 				cfg = eval('(' + readFile(filename) + ')');
 			}
 			else {
-				cfg = loader(filename);
+				cfg = globalLoader(filename);
 			}
 		}
 		else {
@@ -505,7 +490,7 @@ define(function (require) {
 			simpleDefine.amd = {};
 		}
 		try {
-			cjsModule = loader(url + '.js');
+			cjsModule = globalLoader(url + '.js');
 		}
 		finally {
 			if (simpleDefine == global.define) {
@@ -516,8 +501,8 @@ define(function (require) {
 	}
 
 	function fail (ex) {
-		logger('cram failed: ', ex && ex.message || ex);
-		if (ex && ex.stack) logger(ex.stack);
+		console.log('cram failed: ', ex && ex.message || ex);
+		if (ex && ex.stack) console.log(ex.stack);
 		quitter(1);
 	}
 
