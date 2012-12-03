@@ -42,8 +42,7 @@ define(function (require) {
 		}
 
 		// load (and run) feature tests
-		// this declares has() function
-		has = simpleRequire(joinPaths(cramFolder, './lib/has'));
+		has = require('./lib/has');
 
 		// bail now if we can't load text files since we can't read a json config.
 		// shell script should convert the config to a .js file / AMD module
@@ -51,12 +50,6 @@ define(function (require) {
 		if (!has('readFile') && !has('loadJson') && args.configFiles.some(isJsonFile)) {
 			console.log('Configuration file must be wrapped in define with this javascript engine.');
 			return;
-		}
-
-		// load appropriate modules according to the environment
-		if (!has('json')) {
-			// json2.js is not a module. it's plain old js
-			globalLoader(joinPaths(cramFolder, './lib/json2.js'));
 		}
 
 		config = {
