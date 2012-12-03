@@ -10,7 +10,8 @@
  * @version 0.6
  */
 
-(function (global, globalDefine, args) {
+(function (global, globalDefine, globalLoader, define, args) {
+define(function (require) {
 /*global environment:true*/
 'use strict';
 
@@ -591,8 +592,11 @@
 
 	}
 
+});
 }(
 	typeof global != 'undefined' ? global : this,
 	typeof define == 'function' && define.amd && define,
+	typeof curl == 'function' && curl || typeof require == 'function' && require,
+	typeof define == 'function' && define.amd || function (factory) { module.exports = factory(require); },
 	process && process.argv ? process.argv.slice(2) : Array.prototype.slice.apply(arguments)
 ));
