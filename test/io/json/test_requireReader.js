@@ -42,7 +42,7 @@ define(function (require) {
 		'should load an UMD module': function (done) {
 			var promise;
 			try {
-				promise = reader.getReader(toAbsPath('../../data/tinycfg.json'))();
+				promise = reader.getReader(toAbsPath('../../data/tinycfg.js'))();
 			}
 			catch (ex) {
 				fail(ex);
