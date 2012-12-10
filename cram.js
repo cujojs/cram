@@ -15,7 +15,7 @@ define(function (require) {
 /*global environment:true*/
 'use strict';
 
-	var quitter, has, config, cramFolder, curl,
+	var quitter, config, cramFolder, curl,
 		toString, undef;
 
 	toString = Object.prototype.toString;
@@ -41,20 +41,12 @@ define(function (require) {
 			throw new Error('Cannot find cram source folder with this javascript engine. Use --src path_to_cram_js_folder.');
 		}
 
-		// load (and run) feature tests
-		has = require('./lib/has');
-
-		// bail now if we can't load text files since we can't read a json config.
-		// shell script should convert the config to a .js file / AMD module
-		// and re-run this file
-		if (!has('readFile') && !has('loadJson') && args.configFiles.some(isJsonFile)) {
-			console.log('Configuration file must be wrapped in define with this javascript engine.');
-			return;
-		}
-
 		config = {
 			paths: {},
-			packages: {}
+			packages: {},
+			preloads: [
+				'cram/lib/has'
+			]
 		};
 
 		// create default mappings to curl, cram, etc.
@@ -93,8 +85,9 @@ define(function (require) {
 				'cram/lib/link',
 				'cram/lib/ctx',
 				'cram/lib/grok',
-				has('java') ? 'cram/lib/io/javaFileWriter' : 'cram/lib/io/nodeFileWriter',
-				has('readFile') ? 'cram/lib/io/readFileFileReader' : 'cram/lib/io/nodeFileReader'
+				'cram/lib/io/text',
+				'cram/lib/io/json',
+				'cram/lib/config/load'
 			],
 			start,
 			fail
@@ -105,7 +98,7 @@ define(function (require) {
 		fail(ex);
 	}
 
-	function start (require, when, compile, link, getCtx, grok, writer, reader) {
+	function start (require, when, compile, link, getCtx, grok, ioText, ioJson, loadConfig) {
 		var grokked, configs, ids, discovered, io;
 
 		configs = [];
@@ -114,11 +107,7 @@ define(function (require) {
 			grokked = grok(
 				{
 					readFile: function (filename) {
-						var d, r;
-						d = when.defer();
-						r = reader.getReader(filename);
-						r(d.resolve, d.reject);
-						return d.promise;
+						return ioText.getReader(filename)();
 					},
 					warn: function (msg) { console.log('warning: ' + msg); },
 					error: fail
@@ -139,9 +128,7 @@ define(function (require) {
 		when.reduce(
 			configs,
 			function (results, overrides) {
-				// merge configs
-				results.config = mergeConfigs(results.config, overrides);
-				return results;
+				return loadConfig(results, overrides, ioJson);
 			},
 			grokked
 		).then(
@@ -190,39 +177,19 @@ define(function (require) {
 				// cache AST here
 				io = {
 					readFile: function (filename) {
-						var d, r;
-						d = when.defer();
-						r = reader.getReader(filename);
-						r(d.resolve, d.reject);
-						return d.promise;
+						return ioText.getReader(filename)();
 					},
 					readModule: function (ctx) {
-						var d, r;
-						d = when.defer();
-						r = reader.getReader(ctx.withExt(ctx.toUrl(ctx.absId)));
-						r(d.resolve, d.reject);
-						return d.promise;
+						return ioText.getReader(ctx.withExt(ctx.toUrl(ctx.absId)))();
 					},
 					writeModule: function (ctx, contents) {
-						var d, w;
-						d = when.defer();
-						w = writer.getWriter(args.destUrl || '.cram/linked/main.js');
-						w(contents, d.resolve, d.reject);
-						return d.promise;
+						return ioText.getWriter(args.destUrl || '.cram/linked/main.js')(contents);
 					},
 					readMeta: function (ctx) {
-						var d, r;
-						d = when.defer();
-						r = reader.getReader(joinPaths('.cram/meta', ctx.absId));
-						r(d.resolve, d.reject);
-						return d.promise;
+						return ioText.getReader(joinPaths('.cram/meta', ctx.absId))();
 					},
 					writeMeta: function (ctx, contents) {
-						var d, w;
-						d = when.defer();
-						w = writer.getWriter(joinPaths('.cram/meta', ctx.absId));
-						w(contents, d.resolve, d.reject);
-						return d.promise;
+						return ioText.getWriter(joinPaths('.cram/meta', ctx.absId))(contents);
 					},
 					collect: collect
 				};
@@ -245,9 +212,9 @@ define(function (require) {
 		).then(cleanup, fail);
 
 		function cleanup () {
-			if (writer.closeAll) {
+			if (ioText.closeAll) {
 				// clean up
-				writer.closeAll();
+				return ioText.closeAll();
 			}
 		}
 
@@ -359,90 +326,10 @@ define(function (require) {
 		return (/\.json$/).test(filename);
 	}
 
-	function mergeConfigs (baseCfg, configFiles) {
-		var base, i, len, cfg;
-		base = baseCfg || {};
-		for (i = 0, len = configFiles.length; i < len; i++) {
-			cfg = loadConfig(configFiles[i]);
-			base = mergeObjects(base, cfg);
-		}
-		return base;
-	}
-
-	function mergeObjects (base, ext) {
-		var p;
-		for (p in ext) {
-			if (isType(base[p], 'Array')) {
-				base[p] = mergeArrays(base[p], ext[p]);
-			}
-			if (isType(base[p], 'Object')) {
-				base[p] = mergeObjects(base[p], ext[p]);
-			}
-			else {
-				base[p] = ext[p];
-			}
-		}
-		return base;
-	}
-
-	function mergeArrays (base, ext, identity) {
-		var merged, prev;
-
-		if (!identity) identity = defaultIdentity;
-		merged = (base || []).concat(ext || []).sort(sort);
-
-		return merged.reduce(function (result, item) {
-			if (identity(item) != identity(prev)) result.push(item);
-			prev = item;
-			return result;
-		}, []);
-
-		function defaultIdentity (it) {
-			if (isType(a, 'Object')) {
-				return it.id || it.name;
-			}
-			else {
-				return it;
-			}
-		}
-
-		function sort (a, b) {
-			var ida, idb;
-			ida = identity(a);
-			idb = identity(b);
-			return ida == idb ? 0 ? ida < idb : -1 : 1;
-		}
-
-	}
-
-	function isType (obj, type) {
-		return toString.call(obj).slice(8, -1) == type;
-	}
-
-	function loadConfig (filename) {
-		/*jshint evil:true*/
-		var cfg;
-		if (isJsonFile(filename)) {
-			if (has('readFile')) {
-				// eval is more forgiving than JSON.parse
-				cfg = eval('(' + readFile(filename) + ')');
-			}
-			else {
-				cfg = globalLoader(filename);
-			}
-		}
-		else {
-			// assume it's an AMD file with no deps
-			cfg = simpleRequire(filename);
-		}
-		return cfg;
-	}
-
 	function cramDir () {
+		// TODO: move sniffs to has.js
 		var curdir, pos;
 		// find the folder with all of the js modules in it!
-		// we're sniffing for features here instead of in has.js
-		// since this needs to run first so we can find has.js!
 		curdir = currDir();
 		pos = curdir.indexOf('/cram');
 		if (pos >= 0) {
@@ -451,10 +338,8 @@ define(function (require) {
 	}
 
 	function currDir () {
+		// TODO: move sniffs to has.js
 		var curdir;
-		// find the folder with all of the js modules in it!
-		// we're sniffing for features here instead of in has.js
-		// since this needs to run first so we can find has.js!
 		curdir = typeof environment != 'undefined' && 'user.dir' in environment
 			? environment['user.dir']
 			: typeof process != 'undefined' && process.cwd && process.cwd();
@@ -462,35 +347,6 @@ define(function (require) {
 			throw new Error('Could not determine current working directory.');
 		}
 		return curdir;
-	}
-
-	function simpleRequire (url) {
-		var amdModule, cjsModule, simpleDefine;
-		// Create a temporary define function that's sufficient to load a
-		// simplified AMD or UMD module. This define must run sync and can only
-		// have a definition function, not a module id or dependencies.
-		if (!globalDefine) {
-			simpleDefine = global.define = function (id, factory) {
-				// only get first module declared in file
-				if (!amdModule) {
-					// grab last argument as factory or module
-					factory = arguments[arguments.length - 1];
-					amdModule = typeof factory == 'function'
-						? factory()
-						: factory;
-				}
-			};
-			simpleDefine.amd = {};
-		}
-		try {
-			cjsModule = globalLoader(url + '.js');
-		}
-		finally {
-			if (simpleDefine == global.define) {
-				global.define = undef;
-			}
-		}
-		return amdModule || cjsModule;
 	}
 
 	function fail (ex) {
