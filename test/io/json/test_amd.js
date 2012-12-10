@@ -7,7 +7,8 @@ define(function (require) {
 	buster = require('buster');
 	when = require('when');
 	path = require('path');
-	reader = require('../../../lib/io/json/requireReader.js');
+
+	reader = require('../../../lib/io/json/amd.js');
 
 	assert = buster.assert;
 	fail = buster.assertions.fail;
@@ -23,7 +24,7 @@ define(function (require) {
 			assert.equals(reader && reader.getReader && typeof reader.getReader(), 'function');
 			done();
 		},
-		'should load a json file': function (done) {
+		'// should load a json file': function (done) {
 			var promise;
 			try {
 				promise = reader.getReader(toAbsPath('../../data/tinycfg.json'))();
@@ -39,7 +40,7 @@ define(function (require) {
 				fail
 			).always(done);
 		},
-		'should load an UMD module': function (done) {
+		'// should load an UMD module': function (done) {
 			var promise;
 			try {
 				promise = reader.getReader(toAbsPath('../../data/tinycfg.js'))();
@@ -55,7 +56,7 @@ define(function (require) {
 				fail
 			).always(done);
 		},
-		'should fail when attempting to load a missing module': function (done) {
+		'// should fail when attempting to load a missing module': function (done) {
 			var promise;
 			try {
 				promise = reader.getReader('../../data/tinycfg.json')();
@@ -66,7 +67,7 @@ define(function (require) {
 			}
 			done();
 		},
-		'//should load a remote url': function (done) {
+		'// should load a remote url': function (done) {
 			done();
 		}
 

@@ -7,7 +7,7 @@ define(function (require) {
 	buster = require('buster');
 	when = require('when');
 	path = require('path');
-	reader = require('../../../lib/io/text/fsModuleReader');
+	reader = require('../../../lib/io/text/fsModule');
 
 	assert = buster.assert;
 	fail = buster.assertions.fail;
@@ -16,11 +16,20 @@ define(function (require) {
 	resolved = when.resolve;
 	rejected = when.reject;
 
-	buster.testCase('io/text/fsModuleReader', {
+	buster.testCase('io/text/fsModule', {
 
 		'should return an object with a getReader function that returns a function': function (done) {
 			assert.equals(reader && typeof reader.getReader, 'function');
 			assert.equals(reader && reader.getReader && typeof reader.getReader(), 'function');
+			done();
+		},
+		'should return an object with a getWriter function that returns a function': function (done) {
+			assert.equals(reader && typeof reader.getWriter, 'function');
+			assert.equals(reader && reader.getWriter && typeof reader.getWriter(), 'function');
+			done();
+		},
+		'should return an object with a closeAll function': function (done) {
+			assert.equals(reader && typeof reader.closeAll, 'function');
 			done();
 		},
 		'should load a text file': function (done) {
@@ -51,6 +60,12 @@ define(function (require) {
 			}
 		},
 		'//should load a remote url': function (done) {
+			done();
+		},
+		'//should write a text file': function (done) {
+			done();
+		},
+		'//should create a folder structure before writing a file when the folder doesn\'t exist': function (done) {
 			done();
 		}
 
