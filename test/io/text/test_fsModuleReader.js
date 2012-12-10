@@ -7,7 +7,7 @@ define(function (require) {
 	buster = require('buster');
 	when = require('when');
 	path = require('path');
-	reader = require('../../../lib/io/text/nodeReader');
+	reader = require('../../../lib/io/text/fsModuleReader');
 
 	assert = buster.assert;
 	fail = buster.assertions.fail;
@@ -16,7 +16,7 @@ define(function (require) {
 	resolved = when.resolve;
 	rejected = when.reject;
 
-	buster.testCase('io/text/nodeReader', {
+	buster.testCase('io/text/fsModuleReader', {
 
 		'should return an object with a getReader function that returns a function': function (done) {
 			assert.equals(reader && typeof reader.getReader, 'function');
