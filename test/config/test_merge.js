@@ -7,9 +7,9 @@ assert = buster.assert;
 refute = buster.refute;
 fail = buster.assertions.fail;
 
-load = require('../../lib/config/load');
+load = require('../../lib/config/merge');
 
-buster.testCase('cram/lib/config/load', {
+buster.testCase('cram/lib/config/merge', {
 
 	'mergeConfigs': {
 		'should return a function with helper functions': function () {

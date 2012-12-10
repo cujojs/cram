@@ -87,7 +87,7 @@ define(function (require) {
 				'cram/lib/grok',
 				'cram/lib/io/text',
 				'cram/lib/io/json',
-				'cram/lib/config/load'
+				'cram/lib/config/merge'
 			],
 			start,
 			fail
@@ -98,9 +98,10 @@ define(function (require) {
 		fail(ex);
 	}
 
-	function start (require, when, compile, link, getCtx, grok, ioText, ioJson, loadConfig) {
+	function start (require, when, compile, link, getCtx, grok, ioText, ioJson, mergeConfig) {
 		var grokked, configs, ids, discovered, io;
 
+		grokked = {};
 		configs = [];
 
 		if (args.grok) {
@@ -117,20 +118,19 @@ define(function (require) {
 		}
 
 		if (args.configFiles) {
-			configs = args.configFiles.map(
+			configs = when.map(
+				args.configFiles,
 				function (file) {
-					if (isJsonFile(file)) file = 'json!' + file;
-					return curl([file]);
+					return ioJson.getReader(file)();
 				}
 			);
 		}
 
-		when.reduce(
-			configs,
-			function (results, overrides) {
-				return loadConfig(results, overrides, ioJson);
-			},
-			grokked
+		when.all([grokked, configs]).then(
+			function (results) {
+				results[0].config = mergeConfig(results[0].config, configs);
+				return results[0];
+			}
 		).then(
 			function (results) {
 				var config;
