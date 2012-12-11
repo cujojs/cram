@@ -15,18 +15,12 @@ define(function (require) {
 /*global environment:true*/
 'use strict';
 
-	var quitter, config, cramFolder, curl,
+	var config, cramFolder, curl,
 		toString, undef;
 
 	toString = Object.prototype.toString;
 
 	try {
-
-		// TODO: remove the need for quitter()
-		quitter = typeof process !== 'undefined' && process.exit ? process.exit.bind(process) : quit;
-		if (!quitter) {
-			throw new Error('could not create quitter()');
-		}
 
 		// parse the arguments sent to this file
 		args = parseArgs(args);
@@ -62,11 +56,9 @@ define(function (require) {
 		config.baseUrl = joinPaths(args.baseUrl, config.baseUrl || '');
 		config.destUrl = args.destUrl || config.destUrl || '';
 
-		globalLoader(joinPaths(config.paths.curl, '../../dist/curl-for-ssjs/curl.js'));
-		// TODO: we're assuming sync operation here. implement when() so
-		// we can operate in async environs such as browsers.
-		// either that or assume browser has pre-loaded the necessary files.
-
+		if (!global.curl) {
+			globalLoader(joinPaths(config.paths.curl, '../../dist/curl-for-ssjs/curl.js'));
+		}
 		// curl global should be available now
 		if (!global.curl) {
 			throw new Error('curl() was not loaded.');
@@ -321,24 +313,22 @@ define(function (require) {
 		}
 	}
 
-	function isJsonFile (filename) {
-		// parens to appease jshint
-		return (/\.json$/).test(filename);
-	}
-
 	function cramDir () {
-		// TODO: move sniffs to has.js
-		var curdir, pos;
-		// find the folder with all of the js modules in it!
-		curdir = currDir();
-		pos = curdir.indexOf('/cram');
-		if (pos >= 0) {
-			return curdir.substring(0, pos + 5);
+		var dir;
+		if (typeof __dirname != 'undefined') {
+			dir = __dirname;
 		}
+		else if (typeof module != 'undefined' && module.uri) {
+			// remove file: protocol and trailing file name
+			dir = module.uri.replace(/^file:|\/[^\/]*$/g, '')  + '/';
+		}
+		else {
+			throw new Error('Could not determine current working directory.');
+		}
+		return dir;
 	}
 
 	function currDir () {
-		// TODO: move sniffs to has.js
 		var curdir;
 		curdir = typeof environment != 'undefined' && 'user.dir' in environment
 			? environment['user.dir']
@@ -353,6 +343,19 @@ define(function (require) {
 		console.log('cram failed: ', ex && ex.message || ex);
 		if (ex && ex.stack) console.log(ex.stack);
 		quitter(1);
+	}
+
+	function quitter (code) {
+		if (typeof process !== 'undefined' && process.exit) {
+			process.exit(code);
+		}
+		else if (typeof quit == 'function') {
+			quit(code);
+		}
+		else {
+			throw "quitting";
+		}
+
 	}
 
 	function help (write, optionsMap) {
