@@ -1,7 +1,6 @@
 {
 
 	"baseUrl": "",
-	"destUrl": "test/output/built.js",
 	"paths": {
 		"test-js": "test"
 	},

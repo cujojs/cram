@@ -2,7 +2,6 @@
 
 	var config = {
 		baseUrl: '',
-		destUrl: 'test/output/built.js',
 		paths: {
 			curl: './support/curl/src/curl',
 			"test-js": 'test'
