@@ -51,11 +51,6 @@ define(function (require) {
 			]
 		};
 
-		// fill-in missing config data or override with command-line args
-		if (args.baseUrl == '.') args.baseUrl = '';
-		config.baseUrl = joinPaths(args.baseUrl, config.baseUrl || '');
-		config.destUrl = args.destUrl || config.destUrl || '';
-
 		if (!global.curl) {
 			globalLoader(joinPaths(config.paths.curl, '../../dist/curl-for-ssjs/curl.js'));
 		}
@@ -131,7 +126,14 @@ define(function (require) {
 
 				if (!results.includes) results.includes = [];
 
-				if(!config.baseUrl) config.baseUrl = '';
+				// figure out where modules are located
+				if (args.moduleRoot) config.baseUrl = args.moduleRoot;
+				if (config.baseUrl == '.') config.baseUrl = cramFolder;
+				if (/^\./.test(config.baseUrl)) {
+					config.baseUrl = joinPaths(cramFolder, config.baseUrl);
+				}
+
+				config.destUrl = args.destUrl || config.destUrl || '';
 
 				// remove things that curl will try to auto-load
 				if (config.main) {
@@ -142,12 +144,6 @@ define(function (require) {
 					results.includes = config.preloads.concat(results.includes);
 					delete config.preloads;
 				}
-
-				// fix baseUrl (node.js doesn't know how to find anything
-				// that isn't in node_modules or is an absolute file
-				// reference).
-				// TODO: sniff the need for this hack, somehow
-				config.baseUrl = joinPaths(cramFolder, args.baseUrl, config.baseUrl);
 
 				// configure curl
 				curl(config);
@@ -238,9 +234,9 @@ define(function (require) {
 			'-m': 'includes',
 			'--main': 'includes',
 			'--include': 'includes',
-			'-b': 'baseUrl',
-			'--baseurl': 'baseUrl',
-			'--baseUrl': 'baseUrl',
+			'-r': 'moduleRoot',
+			'--root': 'moduleRoot',
+			'--moduleRoot': 'moduleRoot',
 			'-c': 'configFiles',
 			'--config': 'configFiles',
 			'-o': 'destUrl',
@@ -253,7 +249,7 @@ define(function (require) {
 		};
 		// defaults
 		result = {
-			baseUrl: '',
+			moduleRoot: '',
 			destUrl: '',
 			configFiles: [],
 			includes: []
@@ -362,9 +358,9 @@ define(function (require) {
 		var skipLine, header, usage, autoGrok, footer, multiOptionText, helpMap;
 
 		skipLine ='\n\n';
-		header = 'cram, an AMD-compatible module concatenator. An element of cujo.js.';
-		usage = 'Usage:\n\t\t`node cram.js [options]`\n\tor\t`ringo cram.js [options]`\n\tor\t`rhino cram.js [options]`';
-		autoGrok = 'Auto-grok run.js (app bootstrap) file:\n\t\t`node cram.js run.js build_override.json [options]`\n\tor\t`ringo cram.js run.js build_override.json [options]`\n\tor\t`rhino cram.js run.js build_override.json [options]`';
+		header = 'cram, an AMD-compatible module bundler. An element of cujo.js.';
+		usage = 'Usage:\n\t\t`node cram.js [options]`\n\tor\t`ringo cram.js [options]`\n\tor\t`cram [options] (if fully installed)';
+		autoGrok = 'Auto-grok run.js (app bootstrap) file:\n\t\t`cram index.html build_override.json [options]`\n\tor\t`cram run.js build_override.json -root path/to/modules [options]`';
 		footer = 'More help can be found at http://cujojs.com/';
 		multiOptionText = 'You may specify more than one by repeating this option.';
 
@@ -376,8 +372,8 @@ define(function (require) {
 				help: 'includes the following file into the bundle.\n' + multiOptionText
 			},
 			// TODO: rename this to something less confusing
-			'baseUrl': {
-				help: 'specifies the relative path between the web app\'s bootstrap html page and \nthe current directory.'
+			'moduleRoot': {
+				help: 'specifies the path from the current working directory to \nthe location of your packages.  This serves the same \npurpose as (and overrides) baseUrl.'
 			},
 			'configFiles': {
 				help: 'specifies an AMD configuration file. \n' + multiOptionText
@@ -386,7 +382,7 @@ define(function (require) {
 				help: 'specifies the output folder for the generated bundle(s).'
 			},
 			'cramFolder': {
-				help: 'tells cram where its source files are. [needed for Rhino?]'
+				help: 'tells cram where its source files are. DEPRECATED'
 			}
 		};
 
@@ -422,7 +418,7 @@ define(function (require) {
 				// options line
 				output += '\t' + helpMap[p].commands.join(' ') + '\n';
 				// indented, descriptive text
-				output += '\t\t' + helpMap[p].help.replace(/\n/, '\n\t\t') + '\n';
+				output += '\t\t' + helpMap[p].help.replace(/\n/g, '\n\t\t') + '\n';
 			}
 			return output;
 		}
