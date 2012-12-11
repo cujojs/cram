@@ -31,24 +31,24 @@ define(function (require) {
 			cramFolder = joinPaths(currDir(), cramFolder);
 		}
 		if (!cramFolder) cramFolder = cramDir();
-		if (!cramFolder) {
-			throw new Error('Cannot find cram source folder with this javascript engine. Use --src path_to_cram_js_folder.');
-		}
 
 		config = {
-			paths: {},
-			packages: {},
+			paths: {
+				curl: joinPaths(cramFolder, 'support/curl/src/curl')
+			},
+			packages: {
+				cram: {
+					location: cramFolder,
+					main: './cram'
+				},
+				when: {
+					location: joinPaths(cramFolder, 'support/when'),
+					main: 'when'
+				}
+			},
 			preloads: [
 				'cram/lib/has'
 			]
-		};
-
-		// create default mappings to curl, cram, etc.
-		config.paths.curl = joinPaths(cramFolder, 'support/curl/src/curl');
-		config.paths.cram = cramFolder;
-		config.packages.when = {
-			location: joinPaths(cramFolder, 'support/when'),
-			main: 'when'
 		};
 
 		// fill-in missing config data or override with command-line args
@@ -323,7 +323,7 @@ define(function (require) {
 			dir = module.uri.replace(/^file:|\/[^\/]*$/g, '')  + '/';
 		}
 		else {
-			throw new Error('Could not determine current working directory.');
+			throw new Error('Could not determine cram\'s working directory.');
 		}
 		return dir;
 	}
