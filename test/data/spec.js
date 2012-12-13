@@ -1,3 +1,5 @@
+// red herring define() in here. did it fool us?
+/* how about this define() ? */
 define([], {
 
 	component: {
