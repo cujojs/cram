@@ -371,7 +371,6 @@ define(function (require) {
 			'includes': {
 				help: 'includes the following file into the bundle.\n' + multiOptionText
 			},
-			// TODO: rename this to something less confusing
 			'moduleRoot': {
 				help: 'specifies the path from the current working directory to \nthe location of your packages.  This serves the same \npurpose as (and overrides) baseUrl.'
 			},
