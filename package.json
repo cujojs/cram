@@ -32,8 +32,14 @@
 			"web": "http://hovercraftstudios.com"
 		}
 	],
+	"devDependencies": {
+		"buster": "~0.6"
+	},
 	"main": "./cram",
 	"directories": {
 		"test": "test"
+	},
+	"scripts": {
+		"test": "buster-test"
 	}
 }
