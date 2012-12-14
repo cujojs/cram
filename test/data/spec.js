@@ -8,6 +8,7 @@ define([], {
 
 	plugins: [
 		//{ module: 'wire/debug' }
+		{ module: 'wire/dom' }
 	]
 });
 // if run from cram folder:
