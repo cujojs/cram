@@ -226,13 +226,20 @@ define(function (require) {
 
 		function writeFiles(files, io, ctx) {
 			return when.reduce(files, function(_, file) {
-				return io.writeModule(ctx, file);
+				return io.writeModule(ctx, guardSource(file));
 			}, undef);
 		}
 
 		function cleanup () {
 			return ioText.closeAll && ioText.closeAll();
 		}
+	}
+
+	function guardSource (source) {
+		// ensure that any previous code that didn't end correctly (ends
+		// in a comment line without a line feed, for instance) doesn't
+		// cause this source code to fail
+		return /^\s*;|^\s*\//.test(source) ? source : '\n;' + source;
 	}
 
 	/**
