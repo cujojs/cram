@@ -1,6 +1,6 @@
 # Introduction
 
-cram.js is [cujo.js](http://cujojs.com)'s [AMD](https://github.com/amdjs/amdjs-api/wiki) module bundler.
+cram.js is [cujo.js](http://cujojs.com)'s [AMD](concepts.md#amd) module bundler.
 
 cram.js concatenates the modules of your application into larger bundles that may be loaded much more efficiently than when loaded as separate modules.  cram.js can create AMD-compatible bundles that may be loaded by an AMD loader, such as [curl.js](https://github.com/cujojs/curl) or bundles with an integrated loader.
 
