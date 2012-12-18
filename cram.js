@@ -66,8 +66,8 @@ define(function (require) {
 		// run!
 		curl(
 			[
-				'require',
 				'when',
+				'when/sequence',
 				'cram/lib/compile',
 				'cram/lib/link',
 				'cram/lib/ctx',
@@ -85,8 +85,8 @@ define(function (require) {
 		fail(ex);
 	}
 
-	function start (require, when, compile, link, getCtx, grok, ioText, ioJson, mergeConfig) {
-		var grokked, configs, ids, discovered, io;
+	function start(when, sequence, compile, link, getCtx, grok, ioText, ioJson, mergeConfig) {
+		var cramSequence, grokked, configs;
 
 		grokked = {};
 		configs = [];
@@ -113,57 +113,90 @@ define(function (require) {
 			);
 		}
 
-		when.all([grokked, configs]).then(
-			function (results) {
-				results[0].config = mergeConfig(results[0].config, configs);
-				return results[0];
+		cramSequence = sequence.bind(undef, [
+			function (buildContext) {
+				buildContext.ctx = getCtx('', buildContext.config);
+				return buildContext;
+			},
+			function (buildContext) {
+				return compile(buildContext.modules, buildContext.io, buildContext.ctx);
+			},
+			function (buildContext) {
+				return writeFiles(buildContext.prepend, buildContext.io, buildContext.ctx);
+			},
+			function (buildContext) {
+				return link(buildContext.discovered, buildContext.io, buildContext.ctx);
+			},
+			function (buildContext) {
+				return writeFiles(buildContext.append, buildContext.io, buildContext.ctx);
 			}
-		).then(
-			function (results) {
-				var config;
+		]);
 
-				config = results.config;
+		when.join(grokked, configs)
+			.spread(mergeGrokResults)
+			.then(processGrokResults)
+			.then(createBuildContext)
+			.then(cramSequence)
+			.then(cleanup, fail);
 
-				if (!results.includes) results.includes = [];
+		function mergeGrokResults(grokResult, configs) {
+			grokResult.config = mergeConfig(grokResult.config, configs);
+			return grokResult;
+		}
 
-				// figure out where modules are located
-				if (args.moduleRoot) config.baseUrl = args.moduleRoot;
-				if (config.baseUrl == '.') config.baseUrl = cramFolder;
-				if (/^\./.test(config.baseUrl)) {
-					config.baseUrl = joinPaths(cramFolder, config.baseUrl);
-				}
+		function processGrokResults(results) {
+			var config;
 
-				config.destUrl = args.destUrl || config.destUrl || '';
+			config = results.config;
 
-				// remove things that curl will try to auto-load
-				if (config.main) {
-					results.includes = results.includes.concat(config.main);
-					delete config.main;
-				}
-				if (config.preloads) {
-					results.includes = config.preloads.concat(results.includes);
-					delete config.preloads;
-				}
+			if (!results.modules) results.modules = [];
 
-				// configure curl
-				curl(config);
-				return results;
+			// figure out where modules are located
+			if (args.moduleRoot) config.baseUrl = args.moduleRoot;
+			if (config.baseUrl == '.') config.baseUrl = cramFolder;
+			if (/^\./.test(config.baseUrl)) {
+				config.baseUrl = joinPaths(cramFolder, config.baseUrl);
 			}
-		).then(
-			function (results) {
-				ids = results.includes;
 
-				// TODO: collect, but exclude "config.excludes" from output
+			config.destUrl = args.destUrl || config.destUrl || '';
 
+			// remove things that curl will try to auto-load
+			if (config.main) {
+				results.modules = results.modules.concat(config.main);
+				delete config.main;
+			}
+			if (config.preloads) {
+				results.modules = config.preloads.concat(results.includes);
+				delete config.preloads;
+			}
+
+			if(results.loader) {
+				results.prepend = results.prepend.concat(ioText.getReader(results.loader)());
+			}
+
+			// configure curl
+			curl(config);
+			return results;
+		}
+
+		function createBuildContext(results) {
+			// TODO: collect, but exclude "config.excludes" from output
+			var discovered = [];
+
+			return {
+				config: results.config,
+				prepend: results.prepend,
+				modules: results.modules,
+				append: results.append,
 				// collect modules encountered, in order
 				// dual array/hashmap
-				discovered = [];
+				discovered: discovered,
 
 				// compile phase:
 				// transform it to AMD, if necessary
 				// scan for dependencies, etc.
 				// cache AST here
-				io = {
+				io: {
 					readFile: function (filename) {
 						return ioText.getReader(filename)();
 					},
@@ -171,7 +204,7 @@ define(function (require) {
 						return ioText.getReader(ctx.withExt(ctx.toUrl(ctx.absId)))();
 					},
 					writeModule: function (ctx, contents) {
-						return ioText.getWriter(args.destUrl || '.cram/linked/main.js')(contents);
+						return ioText.getWriter(args.destUrl || '.cram/linked/main.js')(guardSource(contents));
 					},
 					readMeta: function (ctx) {
 						return ioText.getReader(joinPaths('.cram/meta', ctx.absId))();
@@ -179,48 +212,36 @@ define(function (require) {
 					writeMeta: function (ctx, contents) {
 						return ioText.getWriter(joinPaths('.cram/meta', ctx.absId))(contents);
 					},
-					collect: collect
-				};
-				return results.config;
-			}
-		).then(
-			function (config) {
-				return getCtx('', config);
-			}
-		).then(
-			function (ctx) {
-				return when(compile(ids, io, ctx), function () {
-					return ctx;
-				});
-			}
-		).then(
-			function (ctx) {
-				return link(discovered, io, ctx);
-			}
-		).then(cleanup, fail);
+					collect: function (id, thing) {
+						var top;
+						if (id in discovered) return discovered[id];
+						top = discovered.length;
+						discovered[id] = top;
+						discovered[top] = thing;
+						return thing;
+					}
+				}
+			};
+		}
+
+		function writeFiles(files, io, ctx) {
+			return when.reduce(files, function(_, file) {
+				return io.writeModule(ctx, file);
+			}, undef);
+		}
 
 		function cleanup () {
-			if (ioText.closeAll) {
-				// clean up
-				return ioText.closeAll();
-			}
+			return ioText.closeAll && ioText.closeAll();
 		}
+	}
 
-		/**
-		 * Collect a bunch of things by id, but preserve their order.
-		 * @param id {String}
-		 * @param thing {*}
-		 * @return {*} thing
-		 */
-		function collect (id, thing) {
-			var top;
-			if (id in discovered) return discovered[id];
-			top = discovered.length;
-			discovered[id] = top;
-			discovered[top] = thing;
-			return thing;
-		}
-
+	function guardSource (source) {
+		// ensure that any previous code that didn't end correctly (ends
+		// in a comment line without a line feed, for instance) doesn't
+		// cause this source code to fail
+		if (!/\n\s*$/.test(source)) source += '\n';
+		if (!/^\s*;|^\s*\//.test(source)) source = '\n;' + source;
+		return source;
 	}
 
 	/**

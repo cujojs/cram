@@ -1,3 +1,5 @@
+// red herring define() in here. did it fool us?
+/* how about this define() ? */
 define([], {
 
 	component: {
@@ -6,6 +8,7 @@ define([], {
 
 	plugins: [
 		//{ module: 'wire/debug' }
+		{ module: 'wire/dom' }
 	]
 });
 // if run from cram folder:
