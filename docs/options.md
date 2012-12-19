@@ -32,8 +32,7 @@ Here's how you specify an additional overrides file:
 node cram client/myapp.html production_build_options.json
 ```
 
-This is simply a shortcut for the following, more explicit way to specify a cofiguration file:
-
+This is simply a shortcut for the following, more explicit way to specify a configuration file:
 
 ```
 node cram client/myapp.html --config production_build_options.json
@@ -41,7 +40,7 @@ node cram client/myapp.html --config production_build_options.json
 
 ## Manual configuration
 
-In some cases, cram.js may not properly infer your intentions.  For advanced cases, you'll need fine-grained control over what cram.js does.  For these situations, cram.js looks for a few other options on the command line.
+In some cases, cram.js may not properly infer your intentions.  For advanced applications, you'll need fine-grained control over what cram.js does.  For both of these situations, cram.js looks for a few other options on the command line.
 
 cram.js supports the following command-line arguments.  In cases where these conflict with configuration options, the command-line arguments take precedence.
 
