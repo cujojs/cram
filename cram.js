@@ -139,13 +139,13 @@ define(function (require) {
 			.then(cramSequence)
 			.then(cleanup, fail);
 
-		function mergeGrokResults(grokResult, configs) {
+		function mergeGrokResults (grokResult, configs) {
 			grokResult.config = mergeConfig(grokResult.config, configs);
 			return grokResult;
 		}
 
-		function processGrokResults(results) {
-			var config;
+		function processGrokResults (results) {
+			var config, loader;
 
 			config = results.config;
 
@@ -158,7 +158,8 @@ define(function (require) {
 				config.baseUrl = joinPaths(cramFolder, config.baseUrl);
 			}
 
-			config.destUrl = args.destUrl || config.destUrl || '';
+			loader = args.loader || results.loader;
+			config.output = args.output || config.output || '';
 
 			// remove things that curl will try to auto-load
 			if (config.main) {
@@ -170,8 +171,8 @@ define(function (require) {
 				delete config.preloads;
 			}
 
-			if(results.loader) {
-				results.prepend = results.prepend.concat(ioText.getReader(results.loader)());
+			if (loader) {
+				results.prepend = results.prepend.concat(ioText.getReader(loader)());
 			}
 
 			// configure curl
@@ -179,7 +180,7 @@ define(function (require) {
 			return results;
 		}
 
-		function createBuildContext(results) {
+		function createBuildContext (results) {
 			// TODO: collect, but exclude "config.excludes" from output
 			var discovered = [];
 
@@ -204,13 +205,13 @@ define(function (require) {
 						return ioText.getReader(ctx.withExt(ctx.toUrl(ctx.absId)))();
 					},
 					writeModule: function (ctx, contents) {
-						return ioText.getWriter(args.destUrl || '.cram/linked/main.js')(guardSource(contents));
+						return ioText.getWriter(args.output || '.cram/linked/main.js')(guardSource(contents));
 					},
 					readMeta: function (ctx) {
-						return ioText.getReader(joinPaths('.cram/meta', ctx.absId))();
+						return ioText.getReader(joinPaths('.cram/meta', ctx.absId + '.json'))();
 					},
 					writeMeta: function (ctx, contents) {
-						return ioText.getWriter(joinPaths('.cram/meta', ctx.absId))(contents);
+						return ioText.getWriter(joinPaths('.cram/meta', ctx.absId + '.json'))(contents);
 					},
 					collect: function (id, thing) {
 						var top;
@@ -224,7 +225,7 @@ define(function (require) {
 			};
 		}
 
-		function writeFiles(files, io, ctx) {
+		function writeFiles (files, io, ctx) {
 			return when.reduce(files, function(_, file) {
 				return io.writeModule(ctx, file);
 			}, undef);
@@ -260,8 +261,10 @@ define(function (require) {
 			'--moduleRoot': 'moduleRoot',
 			'-c': 'configFiles',
 			'--config': 'configFiles',
-			'-o': 'destUrl',
-			'--output': 'destUrl',
+			'-o': 'output',
+			'--output': 'output',
+			'--loader': 'loader',
+			'-l': 'loader',
 			'-s': 'cramFolder',
 			'--src': 'cramFolder',
 			'-?': 'help',
@@ -271,7 +274,7 @@ define(function (require) {
 		// defaults
 		result = {
 			moduleRoot: '',
-			destUrl: '',
+			output: '',
 			configFiles: [],
 			includes: []
 		};
@@ -398,8 +401,11 @@ define(function (require) {
 			'configFiles': {
 				help: 'specifies an AMD configuration file. \n' + multiOptionText
 			},
-			'destUrl': {
+			'output': {
 				help: 'specifies the output folder for the generated bundle(s).'
+			},
+			'loader': {
+				help: 'tells cram to include the following file as an AMD loader.'
 			},
 			'cramFolder': {
 				help: 'tells cram where its source files are. DEPRECATED'

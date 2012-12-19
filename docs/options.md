@@ -57,6 +57,8 @@ cram.js supports the following command-line arguments.  In cases where these con
 	-c --config
 		specifies an AMD configuration file.
 		You may specify more than one by repeating this option.
+	--loader -l
+		tells cram to include the following file as an AMD loader.
 	-o --output
 		specifies the output folder for the generated bundle(s).
 ```

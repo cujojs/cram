@@ -4,7 +4,8 @@
 		baseUrl: '',
 		paths: {
 			curl: 'support/curl/src/curl',
-			"test-js": 'test/data'
+			"test-js": 'test/data',
+			"sizzle": "../sizzle/sizzle"
 		},
 		packages: {
 			// note: i realize this only works if wire repo is a peer to cram.
