@@ -153,9 +153,9 @@ define(function (require) {
 
 			// figure out where modules are located
 			if (args.moduleRoot) config.baseUrl = args.moduleRoot;
-			if (config.baseUrl == '.') config.baseUrl = cramFolder;
+			if (config.baseUrl == '') config.baseUrl = './';
 			if (/^\./.test(config.baseUrl)) {
-				config.baseUrl = joinPaths(cramFolder, config.baseUrl);
+				config.baseUrl = joinPaths(currDir(), config.baseUrl);
 			}
 
 			loader = args.loader || results.loader;
@@ -167,7 +167,7 @@ define(function (require) {
 				delete config.main;
 			}
 			if (config.preloads) {
-				results.modules = config.preloads.concat(results.includes);
+				results.modules = config.preloads.concat(results.modules);
 				delete config.preloads;
 			}
 
