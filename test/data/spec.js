@@ -11,6 +11,7 @@ define([], {
 		{ module: 'wire/dom' },
 		{ module: 'wire/dom/render' },
 		{ module: 'wire/on' },
+		{ module: 'wire/aop' },
 		{ module: 'wire/sizzle' }
 	]
 });

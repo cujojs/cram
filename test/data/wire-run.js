@@ -7,11 +7,14 @@
 			"test-js": 'test/data',
 			"sizzle": "../sizzle/sizzle"
 		},
-		packages: {
+		packages: [
 			// note: i realize this only works if wire repo is a peer to cram.
-			wire: { location: '../wire', main: './wire' }
-		},
+			{ name: 'wire', location: '../wire', main: './wire' },
+			{ name: 'meld', location: '../meld', main: './meld' },
+			{ name: 'poly', location: '../poly', main: './poly' }
+		],
 		pluginPath: 'curl/plugin',
+		preloads: ['poly/all'],
 		main: 'wire!test-js/spec'
 	};
 
