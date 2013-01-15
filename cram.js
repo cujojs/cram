@@ -85,7 +85,7 @@ define(function (require) {
 		fail(ex);
 	}
 
-	function start(when, sequence, compile, link, getCtx, grok, ioText, ioJson, mergeConfig) {
+	function start(when, sequence, compile, link, getCtx, grok, ioText, ioJson, merge) {
 		var cramSequence, grokked, configs;
 
 		grokked = {};
@@ -133,15 +133,84 @@ define(function (require) {
 		]);
 
 		when.join(grokked, configs)
-			.spread(mergeGrokResults)
+			.spread(mergeConfigsOntoGrokResults)
 			.then(processGrokResults)
 			.then(createBuildContext)
 			.then(cramSequence)
 			.then(cleanup, fail);
 
-		function mergeGrokResults (grokResult, configs) {
-			grokResult.config = mergeConfig(grokResult.config, configs);
-			return grokResult;
+		function mergeConfigsOntoGrokResults (grokResults, configs) {
+			var mergedProps;
+
+			// these are merged. all others are overwritten
+			mergedProps = { paths: 1, packages: 1, plugins: 1 };
+
+			grokResults.configs = Array.prototype.reduce.call(configs,
+				function (base, ext) {
+					for (var p in ext) {
+						if (p in mergedProps) {
+							// merge by type
+							if (merge.isType(ext[p], 'Array')) {
+								base[p] = merge.arrays(configThingToArray(base[p]), ext[p], merge.comparators.byName);
+							}
+							else if (merge.isType(ext[p], 'Object')) {
+								base[p] = merge.objects(configThingToObject(base[p]), ext[p], 1);
+							}
+							else if (ext[p] == null) {
+								// remove/undefine
+								delete base[p];
+							}
+							else {
+								// overwrite (i.e. "main" when not an array)
+								base[p] = ext[p];
+							}
+						}
+						else {
+							// everything else is overritten
+							base[p] = ext[p];
+						}
+					}
+					return base;
+				},
+				grokResults.config
+			);
+
+			return grokResults;
+		}
+
+		function configThingToArray (thing) {
+			if (merge.isType(thing, 'Array')) {
+				return thing;
+			}
+			else if (merge.isType(thing, 'Object')) {
+				// return an array of named objects
+				return Object.keys(thing).map(function (key) {
+					if (!thing.name) thing.name = key;
+					return thing[key];
+				});
+			}
+			else {
+				return [thing];
+			}
+		}
+
+		function configThingToObject (thing) {
+			var isNamedObjectArray, obj;
+
+			isNamedObjectArray = merge.isType(thing, 'Array')
+				&& merge.isType(thing[0], 'Object')
+				&& (thing[0].name || thing[0].id);
+
+			if (isNamedObjectArray) {
+				// convert to hash of objects
+				return thing.reduce(function (obj, item) {
+					obj[item.id || item.name] = item;
+					return obj;
+				}, {});
+			}
+			else {
+				return thing;
+			}
 		}
 
 		function processGrokResults (results) {
