@@ -145,7 +145,7 @@ define(function (require) {
 			// these are merged. all others are overwritten
 			mergedProps = { paths: 1, packages: 1, plugins: 1 };
 
-			grokResults.configs = Array.prototype.reduce.call(configs,
+			grokResults.config = Array.prototype.reduce.call(configs,
 				function (base, ext) {
 					for (var p in ext) {
 						if (p in mergedProps) {
@@ -241,7 +241,7 @@ define(function (require) {
 			}
 
 			if (loader) {
-				results.prepend = results.prepend.concat(ioText.getReader(loader)());
+				results.prepend.unshift(ioText.getReader(loader)());
 			}
 
 			// configure curl
