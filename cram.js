@@ -16,9 +16,7 @@ define(function (require) {
 'use strict';
 
 	var config, cramFolder, curl,
-		toString, undef;
-
-	toString = Object.prototype.toString;
+		undef;
 
 	try {
 
