@@ -96,6 +96,7 @@ define(function (require) {
 						return ioText.getReader(filename)();
 					},
 					warn: function (msg) { console.log('warning: ' + msg); },
+					info: function (msg) { console.log('info: ' + msg); },
 					error: fail
 				},
 				args.grok
