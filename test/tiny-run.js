@@ -1,4 +1,4 @@
-(function () {
+define(function () {
 
 	var config = {
 		baseUrl: '',
@@ -12,13 +12,14 @@
 	curl(config, ['test-js/tiny']).then(
 		function () {
 			setPageState('loaded');
-			// this should never get called:
+			// this should never get called by cram:
 			curl(['some/other/module']);
 		},
 		function () {
 			setPageState('failed');
 		}
 	);
+
 
 	// do something DOM-ish (this code should never execute during build!)
 	function setPageState (stateClass) {
@@ -27,4 +28,4 @@
 			+ ' ' + stateClass;
 	}
 
-}());
+});
