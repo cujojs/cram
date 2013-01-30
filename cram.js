@@ -118,6 +118,9 @@ define(function (require) {
 				return buildContext;
 			},
 			function (buildContext) {
+				return compile(buildContext.preloads || [], buildContext.io, buildContext.ctx);
+			},
+			function (buildContext) {
 				return compile(buildContext.modules, buildContext.io, buildContext.ctx);
 			},
 			function (buildContext) {
@@ -235,7 +238,7 @@ define(function (require) {
 				delete config.main;
 			}
 			if (config.preloads) {
-				results.modules = config.preloads.concat(results.modules);
+				results.preloads = config.preloads;
 				delete config.preloads;
 			}
 
@@ -255,6 +258,7 @@ define(function (require) {
 			return {
 				config: results.config,
 				prepend: results.prepend,
+				preloads: results.preloads,
 				modules: results.modules,
 				append: results.append,
 				// collect modules encountered, in order
