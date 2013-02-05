@@ -26,7 +26,7 @@ there are a few ways to configure curl:
 In the following HTML snippet, cram will recognize that curl will load and
 run 'wire!app/main' to launch the application.  cram will walk the dependency
 graph of 'wire!app/main', bundling all of its dependencies into a single 
-bundle.
+AMD bundle.
 
 ```html
 <script>
@@ -46,7 +46,7 @@ var curl = {
 ### Configuring via curl() or curl.config()
 
 You can load curl first and then configure it as follows. cram will also
-recognize this configuration pattern and will build a single bundle.
+recognize this configuration pattern and will build a single AMD bundle.
 
 ```html
 <script src="client/lib/curl/src/curl.js"></script>
@@ -90,7 +90,9 @@ define(function (['curl'], function (curl) {
 ```
 
 Anonymous run modules can be loaded using a single script element by using 
-curl's `data-curl-run` HTML attribute:
+curl's `data-curl-run` HTML attribute.  cram will create an 
+[integrated bundle](#integrated-bundles) that embeds curl.js when it 
+encounters this pattern:
 
 ```html
 <script data-curl-run="client/app/run" src="client/lib/curl/src/curl.js"></script>
@@ -139,6 +141,15 @@ attribute specifies the id of the run module.  Since curl hasn't been
 configured, yet, the module id is the full path of the file without the ".js"
 extension.  
 
+With the single-script pattern, cram will create a single, 
+[integrated bundle](#integrated-bundles).  However, cram will create an
+[AMD bundle](#amd-bundles) if it finds the two-script pattern.
+
+* It's possible to pre-configure curl by declaring a global curl object
+as in the HTML examples above.  You could then omit the path information
+from the name of the run module, but this is totally unnecessary in almost
+all cases.
+
 ## Run.js file configuration
 
 If run.js is not an AMD module, it could use the global curl() function to
@@ -168,7 +179,4 @@ not a single-script pattern:
 <script data-curl-run src="client/app/run.js"></script>
 ```
 
-* It's possible to pre-configure curl by declaring a global curl object
-as in the HTML examples above.  You could then omit the path information
-from the name of the run module, but this is totally unnecessary in almost
-all cases.
+cram will create an [AMD bundle](#amd-bundles) in this case.
