@@ -1,4 +1,9 @@
-define(['js!./notamodule.js!exports=notamodule', 'text!./templates/snippet.html', 'css!./tiny.css'], function (notamodule, snippet) {
+define([
+	// ensure cram can handle this comment as well as these line feeds
+	'js!./notamodule.js!exports=notamodule',
+	'text!./templates/snippet.html',
+	'css!./tiny.css'
+], function (notamodule, snippet) {
 	var doc, temp, dest, node;
 	doc = window.document;
 	temp = doc.createElement('div');
