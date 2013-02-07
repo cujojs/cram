@@ -14,42 +14,48 @@
 /*evil true */
 /*browser true */
 (function (global, XMLHttpRequest, globalEval, cjsmEval) { 'use strict';
-	var cfg, cache, globalCtx, nextTurn, undef;
+	var globalCtx, nextTurn, undef;
 
 	// set default config and mix-in any global config options
-	cfg = extend({
-		appJson: 'application.json',
-		searchPaths: ['', 'lib/'],
-		define: [
-			{ $ref: 'cram/cjsm/????????' }, // TODO: requires a transport format
-			{ $ref: 'cram/resolveDeps' },
-		],
-		require: [
-			{ $ref: 'cram/locate' },
-			{ $ref: 'cram/fetch/text' },
-			{ $ref: 'cram/cjsm/raw/parse' },
-			{ $ref: 'cram/resolveDeps' },
-			{ $ref: 'cram/cjsm/raw/factory' },
-			{ $ref: 'cram/exec' }
-		]
-	}, global.boot || {});
-	
-	cache = {
-		'cram/fetch/text': fetchText,
-		'cram/cjsm/raw/factory': createCjsmFactory,
-		'cram/cjsm/raw/parse': parseCjsm,
-		'cram/resolveDeps': resolveDeps,
-		'cram/locate': locate,
-		'cram/exec': execFactory
+	globalCtx = {
+		cfg: {
+			appJson: 'boot.json',
+			searchPaths: ['', 'lib/'],
+			define: [
+				//{ $ref: 'cram/cjsm/????????' }, // TODO: requires a transport format (bundles and remote modules need a transport)
+				resolveDeps // { $ref: 'cram/resolveDeps' },
+			],
+			require: [
+				locate, // { $ref: 'cram/locate' },
+				//fetchText, // { $ref: 'cram/fetch/text' },
+				parseCjsm, // { $ref: 'cram/cjsm/raw/parse' },
+				resolveDeps, // { $ref: 'cram/resolveDeps' },
+				createCjsmFactory, // { $ref: 'cram/cjsm/raw/factory' },
+				execFactory // { $ref: 'cram/exec' }
+			]
+		},
+		cache: {
+			'cram/fetch/text': fetchText,
+			'cram/cjsm/raw/factory': createCjsmFactory,
+			'cram/cjsm/raw/parse': parseCjsm,
+			'cram/resolveDeps': resolveDeps,
+			'cram/locate': locate,
+			'cram/exec': execFactory
+		}
 	};
 	
-	globalCtx = { cfg: cfg, cache: cache };
+	if (global.boot) globalCtx.cfg = extend(globalCtx.cfg, global.boot);
 	
 	// get application.json and start boot pipeline
-	fetchJson(cfg.appJson)
-		.then(function (json) { return resolveRefs(globalCtx, json); })
-		.then(function (cfg) { return createPkgContext(cfg, globalCtx.cache); })
-		// TODO......
+	fetchJson(globalCtx.cfg.appJson)
+		.then(function (json) {
+			return resolveRefs(globalCtx, json);
+		})
+		.then(function (cfg) {
+			globalCtx.cfg = extend(globalCtx.cfg, cfg);
+			return createPkgContext(globalCtx.cfg, globalCtx.cache);
+		})
+		// TODO...... load main, etc.
 		.then(null, fail);
 
 /*
@@ -83,48 +89,61 @@
 		return { cfg: extend(cfg), cache: extend(cache) };
 	}
 
-	function resolveRefs (pctx, json) {
-		// TODO: should this return extend(json) rather than mutating json?
-		var promises, p;
-		promises = [];
-		for (p in json) {
-			if ('$ref' == p) {
-				promises.push(resolveRefAndReplaceProp(p));
+	function resolveRefs (realm, obj) {
+		var p, mctx, promises;
+
+		if (typeof obj == 'object') {
+			if ('$ref' in obj) {
+				// extend obj with realm and url and pass it requireModule.
+				// should this actually be an id?
+				mctx = extend(obj, { realm: realm, url: obj['$ref'] });
+				return requireModule(mctx);
 			}
-			else if (typeof json[p] == 'object') {
-				promises.push(resolveRefs(json[p]));
+			else {
+				promises = [];
+				for (p in obj) promises.push(resolveRefsThenReplace(p));
+				return all(promises).then(function () { return obj; });
 			}
 		}
-		return all(promises).then(function () { return json; });
+		else {
+			return obj;
+		}
+
+		return obj;
 		
-		function resolveRefAndReplaceProp (name) {
-			return requireModule(pctx, json[p]).then(function (value) {
-				json[name] = value;
-			});
+		function resolveRefsThenReplace (p) {
+			return when(resolveRefs(realm, obj[p]))
+				.then(function (value) {
+					obj[p] = value;
+				});
 		}
 	}
 	
 	function fetchJson (url) {
-		return when(fetchText(url), globalEval);
+		return when(fetchText(url), function (text) {
+			return globalEval('(' + text + ')');
+		});
 	}
 	
-	function requireModule (pctx, url) {
-		if (url in pctx.cache) return pctx.cache[url];
-		if (!pctx.require) pctx.require = pipeline(pctx.cfg.require);
-		return pctx.cache[url] = pctx.require({ url: url });
+	function requireModule (mctx) {
+		var realm = mctx.realm, url = mctx.url;
+		if (url in realm.cache) return realm.cache[url];
+		if (!realm.require) realm.require = createPipeline(realm.cfg.require);
+		return realm.cache[url] = realm.require(mctx);
 	}
 	
-	function defineModule (pctx, mctx) {
-		if (pctx.cache[mctx.url]) throw new Error(mctx.url + ' already defined.');
-		if (!pctx.define) pctx.define = pipeline(pctx.cfg.define);
-		return pctx.cache[mctx.url] = pipeline(pctx.define)(mctx);
+	function defineModule (mctx) {
+		var realm = mctx.realm;
+		if (realm.cache[mctx.url]) throw new Error(mctx.url + ' already defined.');
+		if (!realm.define) realm.define = createPipeline(realm.cfg.define);
+		return realm.cache[mctx.url] = realm.define(mctx);
 	}
 	
-	function execFactory (pctx, mctx) {
+	function execFactory (mctx) {
 		return 'exports' in mctx ? mctx.exports : (mctx.exports = mctx.factory());
 	}
 	
-	function resolveDeps (pctx, mctx) {
+	function resolveDeps (mctx) {
 		var promises, i;
 		
 		promises = [];
@@ -133,24 +152,25 @@
 // TODO: implement reduce and replace some of these loopy promises functions
 		while (i < mctx.deps.length) promises.push(resolveAndCache(mctx.deps[i++]));
 		
-		return all(promises);
+		// TODO: implement yield(value)
+		return all(promises).then(function () { return mctx });
 		
 		function resolveAndCache (id) {
-			return requireModule(pctx, id).then(function (ctx) {
-				pctx.cache[id] = ctx;
+			return requireModule(mctx.realm, id).then(function (ctx) {
+				mctx.realm.cache[id] = ctx;
 				return ctx;
 			});
 		}
 	}
 	
-	// TODO: place pctx on mctx as "realm" and change signature of these functions everywhere
-	function locate (pctx, mctx) {
+	function locate (mctx) {
 		var dfd, paths, i;
 		dfd = new Deferred();
-		paths = pctx.cfg.searchPaths;
+		paths = mctx.realm.cfg.searchPaths;
 		i = 0;
 		while (i < paths.length) {
-			checkAndSave(paths[i++] + mctx.id);
+			// TODO: this isn't right. we should be constructing a url from an id here!
+			checkAndSave(paths[i++] + mctx.url);
 		}
 
 		return dfd.promise;
@@ -176,7 +196,7 @@
 					dfd.reject(new Error(mctx.id + ' was not found in any locations.'));
 				}
 				else {
-					dfd.resolve(mctx);
+					dfd.fulfill(mctx);
 				}
 			}
 		}
@@ -195,7 +215,7 @@
 		x.onreadystatechange = function () {
 			if (x.readyState === 4) {
 				if (x.status < 400) {
-					dfd.resolve(x.responseText);
+					dfd.fulfill(x.responseText);
 				}
 				else {
 					dfd.reject(new Error('fetchText() failed. status: ' + x.status + ' - ' + x.statusText));
@@ -210,32 +230,33 @@
 	
 	var removeCommentsRx, findRValueRequiresRx;
 	
-	removeCommentsRx = /\/\*[\s\S]*?\*\/|\/\/.*?[\n\r]/g,
-	findRValueRequiresRx = /require\s*\(\s*(["'])(.*?[^\\])\1\s*\)|[^\\]?(["'])/g,
+	removeCommentsRx = /\/\*[\s\S]*?\*\/|\/\/.*?[\n\r]/g;
+	findRValueRequiresRx = /require\s*\(\s*(["'])(.*?[^\\])\1\s*\)|[^\\]?(["'])/g;
 
-	function createCjsmFactory (pctx, mctx) {
+	function createCjsmFactory (mctx) {
 		// just create a factory
 		mctx.factory = function () {
-			var exports, module, require, source;
+			var realm, exports, module, require, source;
 
+			realm = mctx.realm;
 			exports = {};
 			module = { id: mctx.id, uri: mctx.url, exports: exports };
 			require = function (id) {
 				// call execFactory in case dep was bundled with other modules
-				return execFactory(pctx, pctx.cache[id]);
+				return execFactory(realm.cache[id]);
 			};
 			// TODO: fix url earlier in the pipeline?
-			source = mctx.source + mctx.url ? '\n/*\n////@ sourceURL=' + mctx.url.replace(/\s/g, '%20') + '\n*/\n' : '';
+			source = mctx.source + (mctx.url ? '\n/*\n////@ sourceURL=' + mctx.url.replace(/\s/g, '%20') + '\n*/\n' : '');
 
 			cjsmEval(require, exports, module, global, source);
 
-			return exports;
+			return module.exports;
 		};
 
 		return mctx;
 	}
 
-	function parseCjsm (pctx, mctx) {
+	function parseCjsm (mctx) {
 		var source, currQuote;
 
 		mctx.deps = [];
@@ -318,9 +339,9 @@
 
 			// Call all the pending handlers
 			nextTurn(function () {
-				bindings.forEach(function (binding) {
-					binding(apply, value);
-				});
+				for (var i = 0, len = bindings.length; i < len; i++) {
+					bindings[i](apply, value);
+				}
 			});
 		}
 	}
@@ -362,7 +383,13 @@
 	}
 	
 	function when (it, callback, errback) {
-		return isPromise(it) ? it.then(callback, errback) : callback(it);
+		var dfd;
+		if (!isPromise(it)) {
+			dfd = new Deferred();
+			dfd.fulfill(it);
+			it = dfd.promise;
+		}
+		return it.then(callback, errback);
 	}
 	
 	function all (things) {
@@ -374,22 +401,30 @@
 		
 		while (thing = things[howMany]) when(thing, counter(howMany++), dfd.reject);
 		
+		if (howMany == 0) dfd.fulfill(results);
+		
 		return dfd.promise;
 		
 		function counter (i) {
 			return function (value) {
 				results[i] = value;
-				if (--howMany == 0) dfd.resolve(results);
+				if (--howMany == 0) dfd.fulfill(results);
 			};
 		}
 	}
 	
-	function pipeline (tasks) {
-		var promise, i, task;
-		promise = when(tasks[0]);
+	function createPipeline (tasks) {
+		var head, i;
+		
+		head = tasks[0];
 		i = 0;
-		while (task = tasks[++i]) promise = promise.then(task);
-		return promise;
+		while (++i < tasks.length) head = chain(head, tasks[i]);
+
+		return head;
+		
+		function chain (task1, task2) {
+			return function () { return task1.apply(this, arguments).then(task2); };
+		}
 	}
 	
 	/***** shims *****/
@@ -425,7 +460,7 @@
 
 	function extend (base, ext) {
 		var o, p;
-		Base.prototype = ext || null;
+		Base.prototype = base || null;
 		o = new Base();
 		Base.prototype = null;
 		for (p in ext) o[p] = ext[p];
@@ -441,6 +476,6 @@
 }(
 	typeof global == 'object' ? global : this.window || this.global,
 	typeof XMLHttpRequest != 'undefined' && XMLHttpRequest,
-	function () { eval(arguments[0]); },
+	function () { return eval(arguments[0]); },
 	function (require, exports, module, global) { eval(arguments[4]); }
 ));

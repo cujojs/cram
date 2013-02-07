@@ -1,0 +1,3 @@
+{
+	main: { $ref: 'frak' }
+}
