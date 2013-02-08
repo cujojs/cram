@@ -277,7 +277,7 @@ define(function (require) {
 						return ioText.getReader(ctx.withExt(ctx.toUrl(ctx.absId)))();
 					},
 					writeModule: function (ctx, contents) {
-						return ioText.getWriter(args.output || '.cram/linked/main.js')(guardSource(contents));
+						return ioText.getWriter(config.output || '.cram/linked/main.js')(guardSource(contents));
 					},
 					readMeta: function (ctx) {
 						return ioText.getReader(joinPaths('.cram/meta', ctx.absId + '.json'))();
