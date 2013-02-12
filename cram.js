@@ -131,6 +131,9 @@ define(function (require) {
 			},
 			function (buildContext) {
 				return writeFiles(buildContext.append, buildContext.io, buildContext.ctx);
+			},
+			function (buildContext) {
+				console.log('info: Output written to ' + buildContext.config.output);
 			}
 		]);
 
@@ -230,7 +233,7 @@ define(function (require) {
 			}
 
 			loader = args.loader || results.loader;
-			config.output = args.output || config.output || '';
+			config.output = ensureDotJs(args.output || results.output || '.cram/linked/bundle.js');
 
 			// remove things that curl will try to auto-load
 			if (config.main) {
@@ -242,6 +245,9 @@ define(function (require) {
 				delete config.preloads;
 			}
 
+//			if (results.runModule) {
+//				results.prepend.unshift(ioText.getReader(results.runModule)());
+//			}
 			if (loader) {
 				results.prepend.unshift(ioText.getReader(loader)());
 			}
@@ -277,7 +283,7 @@ define(function (require) {
 						return ioText.getReader(ctx.withExt(ctx.toUrl(ctx.absId)))();
 					},
 					writeModule: function (ctx, contents) {
-						return ioText.getWriter(config.output || '.cram/linked/main.js')(guardSource(contents));
+						return ioText.getWriter(config.output)(guardSource(contents));
 					},
 					readMeta: function (ctx) {
 						return ioText.getReader(joinPaths('.cram/meta', ctx.absId + '.json'))();
@@ -429,6 +435,10 @@ define(function (require) {
 			throw new Error('Could not determine current working directory.');
 		}
 		return curdir;
+	}
+
+	function ensureDotJs (filename) {
+		return filename.slice(-3) == '.js' ? filename : filename + '.js';
 	}
 
 	function fail (ex) {
