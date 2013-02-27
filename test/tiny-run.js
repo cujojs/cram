@@ -9,7 +9,7 @@ define(function () {
 		pluginPath: 'curl/plugin'
 	};
 
-	curl(config, ['test-js/tiny']).then(
+	curl(config, ['test-js/tiny', 'test-js/external-factory']).then(
 		function () {
 			setPageState('loaded');
 			// this should never get called by cram:
