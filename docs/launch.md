@@ -1,6 +1,6 @@
 # Application Launch
 
-cram uses [Code Inference](concepts.md#code-inference) on both HTML files and 
+cram uses [Code Inference](concepts.md#code-inference) on both HTML files and
 Javascript files to determine the files and configuration needed to create
 your web app.  By searching for calls to curl.js inside the files that launch
 your application, cram can typically figure out everything it needs to know
@@ -13,7 +13,7 @@ curl.js can be confiured in a few ways and in a few places:
 
 ## HTML configuration
 
-For simple applications, it can be convenient to keep the configuration in the 
+For simple applications, it can be convenient to keep the configuration in the
 application's HTML file(s).  cram can scan an HTML file for `script` elements
 and use Code Inference on scripts that call or load curl.js.  In an HTML file,
 there are a few ways to configure curl:
@@ -25,7 +25,7 @@ there are a few ways to configure curl:
 
 In the following HTML snippet, cram will recognize that curl will load and
 run 'wire!app/main' to launch the application.  cram will walk the dependency
-graph of 'wire!app/main', bundling all of its dependencies into a single 
+graph of 'wire!app/main', bundling all of its dependencies into a single
 AMD bundle.
 
 ```html
@@ -74,7 +74,7 @@ Here's a simple example of an anonymous run module:
 
 ```js
 // client/app/run
-define(function (['curl'], function (curl) {
+define(['curl'], function (curl) {
 	curl.config({
 		baseUrl: 'client/',
 		packages: [
@@ -89,9 +89,9 @@ define(function (['curl'], function (curl) {
 });
 ```
 
-Anonymous run modules can be loaded using a single script element by using 
-curl's `data-curl-run` HTML attribute.  cram will create an 
-[integrated bundle](#integrated-bundles) that embeds curl.js when it 
+Anonymous run modules can be loaded using a single script element by using
+curl's `data-curl-run` HTML attribute.  cram will create an
+[integrated bundle](#integrated-bundles) that embeds curl.js when it
 encounters this pattern:
 
 ```html
@@ -102,8 +102,8 @@ encounters this pattern:
 
 A named run module is similar to an anonymous one, but allows more options.
 The main difference between an anonymous and a named module is the inclusion
-of the module's id as the first parameter to `define()`.  Note: since 
-curl hasn't been configured yet*, the run module's id has to include the full 
+of the module's id as the first parameter to `define()`.  Note: since
+curl hasn't been configured yet*, the run module's id has to include the full
 path from the HTML file:
 
 ```js
@@ -134,14 +134,14 @@ element:
 <script data-curl-run="client/app/run" src="client/lib/curl/src/curl.js"></script>
 ```
 
-Note in the two-script pattern, the `data-curl-run` attribute has no value. 
-(If you were to specify a value here, curl would attempt to load the module 
+Note in the two-script pattern, the `data-curl-run` attribute has no value.
+(If you were to specify a value here, curl would attempt to load the module
 named by that value!)  In the single-script pattern, the `data-curl-run`
-attribute specifies the id of the run module.  Since curl hasn't been 
+attribute specifies the id of the run module.  Since curl hasn't been
 configured, yet, the module id is the full path of the file without the ".js"
-extension.  
+extension.
 
-With the single-script pattern, cram will create a single, 
+With the single-script pattern, cram will create a single,
 [integrated bundle](#integrated-bundles).  However, cram will create an
 [AMD bundle](#amd-bundles) if it finds the two-script pattern.
 
