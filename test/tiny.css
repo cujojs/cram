@@ -1,4 +1,4 @@
 .tiny {
 	color: blue;
-	background-color: yellow;
+	background: yellow url(foo.png);
 }
