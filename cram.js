@@ -298,7 +298,10 @@ define(function (require) {
 						discovered[id] = top;
 						discovered[top] = thing;
 						return thing;
-					}
+					},
+					warn: function (msg) { console.log('warning: ' + msg); },
+					info: function (msg) { console.log('info: ' + msg); },
+					error: fail
 				}
 			};
 		}
