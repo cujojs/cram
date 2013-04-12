@@ -41,5 +41,8 @@
 	},
 	"scripts": {
 		"test": "buster-test"
+	},
+	"bin": {
+		"cram": "./bin/cram"
 	}
 }
