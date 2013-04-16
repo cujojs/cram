@@ -43,5 +43,8 @@
 	"scripts": {
 		"postinstall": "bower install",
 		"test": "buster-test"
+	},
+	"bin": {
+		"cram": "./bin/cram"
 	}
 }
