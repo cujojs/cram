@@ -33,13 +33,15 @@
 		}
 	],
 	"devDependencies": {
-		"buster": "~0.6"
+		"buster": "~0.6",
+		"bower": ""
 	},
 	"main": "./cram",
 	"directories": {
 		"test": "test"
 	},
 	"scripts": {
+		"postinstall": "bower install",
 		"test": "buster-test"
 	}
 }

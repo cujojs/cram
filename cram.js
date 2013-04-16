@@ -32,7 +32,7 @@ define(function (require) {
 
 		config = {
 			paths: {
-				curl: joinPaths(cramFolder, 'support/curl/src/curl')
+				curl: joinPaths(cramFolder, 'amd_modules/curl/src/curl')
 			},
 			packages: {
 				cram: {
@@ -40,7 +40,7 @@ define(function (require) {
 					main: './cram'
 				},
 				when: {
-					location: joinPaths(cramFolder, 'support/when'),
+					location: joinPaths(cramFolder, 'amd_modules/when'),
 					main: 'when'
 				}
 			},
