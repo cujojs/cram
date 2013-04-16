@@ -6,7 +6,7 @@ your web app.  By searching for calls to curl.js inside the files that launch
 your application, cram can typically figure out everything it needs to know
 to build your app into a single AMD bundle.
 
-curl.js can be confiured in a few ways and in a few places:
+curl.js can be configured in a few ways and in a few places:
 1. inside the HTML
 1. in an AMD module (a.k.a. "run module" -- **preferred!**)
 1. in a non-modular Javascript file (a.k.a. "run.js file")

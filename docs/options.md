@@ -13,7 +13,7 @@ static location, you may be able to use Code Inference on your HTML file(s)
 directly.  In its simplest form, the command line looks like this:
 
 ```
-node cram client/myapp.html
+node path/to/cram client/myapp.html
 ```
 
 ## run.js auto-configuration
@@ -25,7 +25,7 @@ and tell cram where to find the app's modules using the `--root`
 [command line option](#manual-configuration).
 
 ```
-node cram client/myapp/run.js --root client/myapp/
+node path/to/cram client/myapp/run.js --root client/myapp/
 ```
 
 ## Compile-time Overrides
@@ -38,14 +38,14 @@ run-time files.
 Here's how you specify an additional overrides file:
 
 ```
-node cram client/myapp.html production_build_options.json
+node path/to/cram client/myapp.html production_build_options.json
 ```
 
 This is simply a shortcut for the following, more explicit way to specify a
 configuration file:
 
 ```
-node cram client/myapp.html --config production_build_options.json
+node path/to/cram client/myapp.html --config production_build_options.json
 ```
 
 ## Manual configuration
