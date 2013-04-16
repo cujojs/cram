@@ -1,6 +1,6 @@
 # Introduction
 
-cram.js is [cujo.js](http://cujojs.com)'s [AMD](concepts.md#amd) module
+cram.js is [cujoJS](http://cujojs.com)'s [AMD](concepts.md#amd) module
 bundler.
 
 cram.js concatenates the modules of your application into larger

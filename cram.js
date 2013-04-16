@@ -467,7 +467,7 @@ define(function (require) {
 		var skipLine, header, usage, autoGrok, footer, multiOptionText, helpMap;
 
 		skipLine ='\n\n';
-		header = 'cram, an AMD-compatible module bundler. An element of cujo.js.';
+		header = 'cram, an AMD-compatible module bundler. An element of cujoJS.';
 		usage = 'Usage:\n\t\t`node cram.js [options]`\n\tor\t`ringo cram.js [options]`\n\tor\t`cram [options] (if fully installed)';
 		autoGrok = 'Auto-grok run.js (app bootstrap) file:\n\t\t`cram index.html build_override.json [options]`\n\tor\t`cram run.js build_override.json -root path/to/modules [options]`';
 		footer = 'More help can be found at http://cujojs.com/';
