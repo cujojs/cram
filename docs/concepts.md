@@ -83,7 +83,7 @@ such as [CommonJS Modules](#commonjs-modules), into AMD.
 
 It can be a bit of a maintenance hassle to have to keep two different copies of
 your application's [AMD](#amd) config: one for the loader and one for the
-bundler.  cram.js let's you reuse your loader config even if it's embedded in
+bundler.  cram.js lets you reuse your loader config even if it's embedded in
 an HTML file or a [run.js](#run-js).
 
 cram.js will inspect your HTML and/or Javascript files for configuration
