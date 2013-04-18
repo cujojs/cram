@@ -7,7 +7,6 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  *
- * @version 0.7.0
  */
 
 (function (global, globalDefine, globalLoader, define, args) {
