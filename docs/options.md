@@ -48,6 +48,31 @@ configuration file:
 node path/to/cram client/myapp.html --config production_build_options.json
 ```
 
+These files do not need to be strictly JSON.  They can be simple object
+literals.
+
+cram.js uses the same config options as curl.js, including `baseUrl`, `main`,
+and `paths`, `packages`, `plugins`, and `preloads` with the
+following additions and caveats.
+
+* `excludes`: an array of module ids (strings) that should not be bundled
+* `excludeRx`: a RegExp (or array of Regexp or array of strings) that may
+	also be used to exclude the ids of modules from the bundle
+* `paths`, `packages`, `plugins`, and `preloads`: unlike other config options,
+these lists are merged with the same lists in earlier config files.
+
+The caveat to the the merged lists is that it's impossible to remove items
+from the lists.  You can, however, remove the entire list by specifying a `null`
+value for the config option.  This allows the list to be ignored by cram.js,
+but still used by curl.js.
+
+Once you've removed the list, you could include a new one in a subsequent
+config file:
+
+```
+node path/to/cram client/myapp.html remove_paths.json production.json
+```
+
 ## Manual configuration
 
 In some cases, cram.js may not properly infer your intentions.  Also, for

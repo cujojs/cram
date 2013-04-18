@@ -16,7 +16,10 @@ define(function (require) {
 'use strict';
 
 	var config, cramFolder, curl,
+		defaultExcludes,
 		undef;
+
+	defaultExcludes = { 'curl': true, 'curl/_privileged': true };
 
 	try {
 
@@ -104,12 +107,9 @@ define(function (require) {
 		}
 
 		if (args.configFiles) {
-			configs = when.map(
-				args.configFiles,
-				function (file) {
-					return ioJson.getReader(file)();
-				}
-			);
+			configs = when.map(args.configFiles, function (file) {
+				return ioJson.getReader(file)();
+			});
 		}
 
 		cramSequence = sequence.bind(undef, [
@@ -148,7 +148,7 @@ define(function (require) {
 			var mergedProps;
 
 			// these are merged. all others are overwritten
-			mergedProps = { paths: 1, packages: 1, plugins: 1 };
+			mergedProps = { paths: 1, packages: 1, plugins: 1, excludes: 1 };
 
 			grokResults.config = Array.prototype.reduce.call(configs,
 				function (base, ext) {
@@ -224,6 +224,7 @@ define(function (require) {
 			config = results.config;
 
 			if (!results.modules) results.modules = [];
+			if (!results.excludeIds) results.excludeIds = defaultExcludes;
 
 			// figure out where modules are located
 			if (args.moduleRoot) config.baseUrl = args.moduleRoot;
@@ -245,9 +246,22 @@ define(function (require) {
 				delete config.preloads;
 			}
 
-//			if (results.runModule) {
-//				results.prepend.unshift(ioText.getReader(results.runModule)());
-//			}
+			// convert config.excludes array to results.excludes hashmap
+			if (config.excludes) {
+				config.excludes.forEach(function (exclude) {
+					results.excludeIds[exclude] = true;
+				})
+			}
+			// convert config.excludeRx RegExp (or array) to array of RegExp
+			results.excludeRx = [];
+			if (config.excludeRx) {
+				results.excludeRx = results.excludeRx
+					.concat(config.excludeRx)
+					.map(function (rx) {
+						return typeof rx == 'string' ? new RegExp(rx) : rx;
+					});
+			}
+
 			if (loader) {
 				results.prepend.unshift(ioText.getReader(loader)());
 			}
@@ -292,12 +306,16 @@ define(function (require) {
 						return ioText.getWriter(joinPaths('.cram/meta', ctx.absId + '.json'))(contents);
 					},
 					collect: function (id, thing) {
-						var top;
-						if (id in discovered) return discovered[id];
+						var top, excluded;
+						excluded = (id in discovered)
+							|| (id in results.excludeIds)
+							|| results.excludeRx.some(function (rx) {
+								return rx.test(id);
+							});
+						if (excluded) return;
 						top = discovered.length;
 						discovered[id] = top;
 						discovered[top] = thing;
-						return thing;
 					},
 					warn: function (msg) { console.log('warning: ' + msg); },
 					info: function (msg) { console.log('info: ' + msg); },

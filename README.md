@@ -14,7 +14,7 @@ See the docs/ folder for instructions and useful information.
 npm install cram
 ```
 
-To run cram from anywhere:
+To run cram from any folder:
 
 ```
 npm install -g cram
