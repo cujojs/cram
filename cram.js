@@ -223,6 +223,7 @@ define(function (require) {
 			config = results.config;
 
 			if (!results.modules) results.modules = [];
+			if (args.includes) results.modules = results.modules.concat(args.includes);
 			if (!results.excludeIds) results.excludeIds = defaultExcludes;
 
 			// figure out where modules are located
