@@ -98,7 +98,7 @@ define(function (require) {
 						return ioText.getReader(filename)();
 					},
 					warn: function (msg) { console.log('warning: ' + msg); },
-					info: function (msg) { console.log('info: ' + msg); },
+					info: function (msg) { console.log(msg); },
 					error: fail
 				},
 				args.grok
@@ -117,22 +117,33 @@ define(function (require) {
 				return buildContext;
 			},
 			function (buildContext) {
-				return compile(buildContext.preloads || [], buildContext.io, buildContext.ctx);
+				if (buildContext.preloads.length > 0) {
+					console.log('compiling preloads');
+					return compile(buildContext.preloads || [], buildContext.io, buildContext.ctx);
+				}
 			},
 			function (buildContext) {
+				console.log('compiling modules');
 				return compile(buildContext.modules, buildContext.io, buildContext.ctx);
 			},
 			function (buildContext) {
-				return writeFiles(buildContext.prepend, buildContext.io, buildContext.ctx);
+				if (buildContext.prepend.length > 0) {
+					console.log('writing prefix');
+					return writeFiles(buildContext.prepend, buildContext.io, buildContext.ctx);
+				}
 			},
 			function (buildContext) {
+				console.log('linking');
 				return link(buildContext.discovered, buildContext.io, buildContext.ctx);
 			},
 			function (buildContext) {
-				return writeFiles(buildContext.append, buildContext.io, buildContext.ctx);
+				if (buildContext.append.length > 0) {
+					console.log('writing suffix');
+					return writeFiles(buildContext.append, buildContext.io, buildContext.ctx);
+				}
 			},
 			function (buildContext) {
-				console.log('info: Output written to ' + buildContext.config.output);
+				console.log('Output written to ' + buildContext.config.output);
 			}
 		]);
 
@@ -318,7 +329,7 @@ define(function (require) {
 						discovered[top] = thing;
 					},
 					warn: function (msg) { console.log('warning: ' + msg); },
-					info: function (msg) { console.log('info: ' + msg); },
+					info: function (msg) { console.log(msg); },
 					error: fail
 				}
 			};
