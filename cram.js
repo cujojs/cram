@@ -119,32 +119,32 @@ define(function (require) {
 			},
 			function (buildContext) {
 				if (buildContext.preloads.length > 0) {
-					log.info('compiling preloads');
+					log.info('Compiling preloads');
 					return compile(buildContext.preloads || [], buildContext.io, buildContext.ctx);
 				}
 			},
 			function (buildContext) {
-				log.info('compiling modules');
+				log.info('Compiling modules');
 				return compile(buildContext.modules, buildContext.io, buildContext.ctx);
 			},
 			function (buildContext) {
 				if (buildContext.prepend.length > 0) {
-					log.info('writing prefix');
+					log.info('Writing prefix');
 					return writeFiles(buildContext.prepend, buildContext.io, buildContext.ctx);
 				}
 			},
 			function (buildContext) {
-				log.info('linking');
+				log.info('Linking');
 				return link(buildContext.discovered, buildContext.io, buildContext.ctx);
 			},
 			function (buildContext) {
 				if (buildContext.append.length > 0) {
-					log.info('writing suffix');
+					log.info('Writing suffix');
 					return writeFiles(buildContext.append, buildContext.io, buildContext.ctx);
 				}
 			},
 			function (buildContext) {
-				log.info('Output written to ' + buildContext.config.output);
+				log.info('Bundle written to ' + buildContext.config.output);
 			}
 		]);
 
@@ -240,14 +240,19 @@ define(function (require) {
 
 			// figure out where modules are located
 			appRoot = args.appRoot || results.appRoot;
-			if (appRoot) config.baseUrl = joinPaths(appRoot, config.baseUrl);
+			if (appRoot) {
+				log.info('`appRoot` resolved to', appRoot);
+				config.baseUrl = joinPaths(appRoot, config.baseUrl);
+			}
 			if (config.baseUrl == '') config.baseUrl = './';
 			if (/^\./.test(config.baseUrl)) {
 				config.baseUrl = joinPaths(currDir(), config.baseUrl);
 			}
+			log.info('`baseUrl` resolved to', config.baseUrl);
 
 			loader = args.loader || results.loader;
 			config.output = ensureDotJs(args.output || results.output || '.cram/linked/bundle.js');
+			log.info('`output` resolved to', config.output);
 
 			// remove things that curl will try to auto-load
 			if (config.main) {
@@ -276,6 +281,7 @@ define(function (require) {
 			}
 
 			if (loader) {
+				log.info('Loader to be bundled:', loader);
 				results.prepend.unshift(ioText.getReader(loader)());
 			}
 
