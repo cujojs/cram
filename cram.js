@@ -74,7 +74,8 @@ define(function (require) {
 				'cram/lib/grok',
 				'cram/lib/io/text',
 				'cram/lib/io/json',
-				'cram/lib/config/merge'
+				'cram/lib/config/merge',
+				'cram/lib/log'
 			],
 			start,
 			fail
@@ -85,7 +86,7 @@ define(function (require) {
 		fail(ex);
 	}
 
-	function start(when, sequence, compile, link, getCtx, grok, ioText, ioJson, merge) {
+	function start(when, sequence, compile, link, getCtx, grok, ioText, ioJson, merge, log) {
 		var cramSequence, grokked, configs;
 
 		grokked = {};
@@ -97,8 +98,8 @@ define(function (require) {
 					readFile: function (filename) {
 						return ioText.getReader(filename)();
 					},
-					warn: function (msg) { console.log('warning: ' + msg); },
-					info: function (msg) { console.log(msg); },
+					warn: log.warn,
+					info: log.info,
 					error: fail
 				},
 				args.grok
@@ -118,32 +119,32 @@ define(function (require) {
 			},
 			function (buildContext) {
 				if (buildContext.preloads.length > 0) {
-					console.log('compiling preloads');
+					log.info('compiling preloads');
 					return compile(buildContext.preloads || [], buildContext.io, buildContext.ctx);
 				}
 			},
 			function (buildContext) {
-				console.log('compiling modules');
+				log.info('compiling modules');
 				return compile(buildContext.modules, buildContext.io, buildContext.ctx);
 			},
 			function (buildContext) {
 				if (buildContext.prepend.length > 0) {
-					console.log('writing prefix');
+					log.info('writing prefix');
 					return writeFiles(buildContext.prepend, buildContext.io, buildContext.ctx);
 				}
 			},
 			function (buildContext) {
-				console.log('linking');
+				log.info('linking');
 				return link(buildContext.discovered, buildContext.io, buildContext.ctx);
 			},
 			function (buildContext) {
 				if (buildContext.append.length > 0) {
-					console.log('writing suffix');
+					log.info('writing suffix');
 					return writeFiles(buildContext.append, buildContext.io, buildContext.ctx);
 				}
 			},
 			function (buildContext) {
-				console.log('Output written to ' + buildContext.config.output);
+				log.info('Output written to ' + buildContext.config.output);
 			}
 		]);
 
@@ -229,7 +230,7 @@ define(function (require) {
 		}
 
 		function processGrokResults (results) {
-			var config, loader;
+			var config, appRoot, loader;
 
 			config = results.config;
 
@@ -238,7 +239,8 @@ define(function (require) {
 			if (!results.excludeIds) results.excludeIds = defaultExcludes;
 
 			// figure out where modules are located
-			if (args.moduleRoot) config.baseUrl = args.moduleRoot;
+			appRoot = args.appRoot || results.appRoot;
+			if (appRoot) config.baseUrl = joinPaths(appRoot, config.baseUrl);
 			if (config.baseUrl == '') config.baseUrl = './';
 			if (/^\./.test(config.baseUrl)) {
 				config.baseUrl = joinPaths(currDir(), config.baseUrl);
@@ -328,8 +330,8 @@ define(function (require) {
 						discovered[id] = top;
 						discovered[top] = thing;
 					},
-					warn: function (msg) { console.log('warning: ' + msg); },
-					info: function (msg) { console.log(msg); },
+					info: log.info,
+					warn: log.warn,
 					error: fail
 				}
 			};
@@ -361,14 +363,15 @@ define(function (require) {
 	 * @return {Object}
 	 */
 	function parseArgs (args) {
-		var optionMap, arg, option, result;
+		var optionMap, arg, option, result, log;
+
 		optionMap = {
 			'-m': 'includes',
 			'--main': 'includes',
 			'--include': 'includes',
-			'-r': 'moduleRoot',
-			'--root': 'moduleRoot',
-			'--moduleRoot': 'moduleRoot',
+			'-r': 'appRoot',
+			'--root': 'appRoot',
+			'--appRoot': 'appRoot',
 			'-c': 'configFiles',
 			'--config': 'configFiles',
 			'-o': 'output',
@@ -381,16 +384,21 @@ define(function (require) {
 			'-h': 'help',
 			'--help': 'help'
 		};
+
 		// defaults
 		result = {
-			moduleRoot: '',
+			appRoot: '',
 			output: '',
 			configFiles: [],
 			includes: []
 		};
+
+		log = console.log.bind(console);
+
 		if (!args.length) {
-			help(console.log.bind(console), optionMap); quitter();
+			help(log, optionMap); quitter();
 		}
+
 		// pop off an arg and compare it to list of known option names
 		while ((arg = args.shift())) {
 
@@ -408,7 +416,7 @@ define(function (require) {
 					result.configFiles.push(arg);
 				}
 				else if (option == 'help') {
-					help(console.log.bind(console), optionMap); quitter();
+					help(log, optionMap); quitter();
 				}
 				else if (!option) {
 					throw new Error('unknown option: ' + arg);
@@ -497,7 +505,7 @@ define(function (require) {
 
 		skipLine ='\n\n';
 		header = 'cram, an AMD-compatible module bundler. An element of cujoJS.';
-		usage = 'Usage:\n\t\t`node cram.js [options]`\n\tor\t`ringo cram.js [options]`\n\tor\t`cram [options] (if fully installed)';
+		usage = 'Usage:\n\t\t`node cram.js [options]`\n\tor\t`ringo cram.js [options]`\n\tor\t`cram [options] (if installed globally)';
 		autoGrok = 'Auto-grok run.js (app bootstrap) file:\n\t\t`cram index.html build_override.json [options]`\n\tor\t`cram run.js build_override.json -root path/to/modules [options]`';
 		footer = 'More help can be found at http://cujojs.com/';
 		multiOptionText = 'You may specify more than one by repeating this option.';
@@ -507,10 +515,13 @@ define(function (require) {
 				help: 'provides this help message.'
 			},
 			'includes': {
-				help: 'includes the following file into the bundle.\n' + multiOptionText
+				help: 'includes the following file into the bundle.\n'
+					+ multiOptionText
 			},
-			'moduleRoot': {
-				help: 'specifies the path from the current working directory to \nthe location of your packages.  This serves the same \npurpose as (and overrides) baseUrl.'
+			'appRoot': {
+				help: 'specifies the path from the current working directory to \n'
+					+ 'the effective location of your html documents.  This serves as the \n'
+					+ 'root of the baseUrl in an AMD configuration.'
 			},
 			'configFiles': {
 				help: 'specifies an AMD configuration file. \n' + multiOptionText
