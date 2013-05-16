@@ -90,10 +90,10 @@ precedence.
 	-m --main --include
 		includes the following file into the bundle.
 		You may specify more than one by repeating this option.
-	-r --root --moduleRoot
+	-r --root --appRoot
 		specifies the path from the current working directory to
-		the location of your packages.  This serves the same
-		purpose as (and overrides) baseUrl.
+		the effective location of your html documents.  This serves as the
+		root of the baseUrl in an AMD configuration.
 	-c --config
 		specifies an AMD configuration file.
 		You may specify more than one by repeating this option.
