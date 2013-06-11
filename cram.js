@@ -118,7 +118,7 @@ define(function (require) {
 				return buildContext;
 			},
 			function (buildContext) {
-				if (buildContext.preloads.length > 0) {
+				if (buildContext.preloads  && buildContext.preloads.length > 0) {
 					log.info('Compiling preloads');
 					return compile(buildContext.preloads || [], buildContext.io, buildContext.ctx);
 				}
