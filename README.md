@@ -2,8 +2,6 @@
 
 ## cujoJS resource assembler
 
-If using curl.js or wire.js, be sure to grab the latest code in their respective "dev" branches.
-
 See the docs/ folder for instructions and useful information.
 
 ## Installation
@@ -27,3 +25,9 @@ TBD
 ### Bower
 
 TBD
+
+## Release notes
+
+0.7.4
+
+* Fixes around literal RegExps
