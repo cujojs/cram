@@ -167,7 +167,13 @@ define(function (require) {
 						if (p in mergedProps) {
 							// merge by type
 							if (merge.isType(ext[p], 'Array')) {
-								base[p] = merge.arrays(configThingToArray(base[p]), ext[p], merge.comparators.byName);
+								// sniff the first item to determine which comparator to use
+								if (merge.isType(ext[p][0], 'Object')) {
+									base[p] = merge.arrays(configThingToArray(base[p]), ext[p], merge.comparators.byName);
+								}
+								else {
+									base[p] = merge.arrays(configThingToArray(base[p]), ext[p], merge.comparators.byIdentity);
+								}
 							}
 							else if (merge.isType(ext[p], 'Object')) {
 								base[p] = merge.objects(configThingToObject(base[p]), ext[p], 1);
