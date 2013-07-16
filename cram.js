@@ -156,12 +156,12 @@ define(function (require) {
 			.then(cleanup, fail);
 
 		function mergeConfigsOntoGrokResults (grokResults, configs) {
-			var mergedProps;
+			var mergedProps, grokCfg;
 
 			// these are merged. all others are overwritten
-			mergedProps = { paths: 1, packages: 1, plugins: 1, excludes: 1 };
+			mergedProps = { paths: 1, packages: 1, plugins: 1, excludes: 1, excludeRx: 1 };
 
-			grokResults.config = Array.prototype.reduce.call(configs,
+			grokCfg = grokResults.config = Array.prototype.reduce.call(configs,
 				function (base, ext) {
 					for (var p in ext) {
 						if (p in mergedProps) {
@@ -242,7 +242,12 @@ define(function (require) {
 
 			if (!results.modules) results.modules = [];
 			if (args.includes) results.modules = results.modules.concat(args.includes);
+			if (!results.excludes) results.excludes = [];
+			if (config.excludes) results.excludes = results.excludes.concat(config.excludes);
+			if (args.excludes) results.excludes = results.excludes.concat(args.excludes);
 			if (!results.excludeIds) results.excludeIds = defaultExcludes;
+			if (!results.excludeRx) results.excludeRx = [];
+			if (config.excludeRx) results.excludeRx = results.excludeRx.concat(config.excludeRx);
 
 			// figure out where modules are located
 			appRoot = args.appRoot || results.appRoot;
@@ -270,21 +275,16 @@ define(function (require) {
 				delete config.preloads;
 			}
 
-			// convert config.excludes array to results.excludes hashmap
-			if (config.excludes) {
-				config.excludes.forEach(function (exclude) {
-					results.excludeIds[exclude] = true;
-				})
-			}
-			// convert config.excludeRx RegExp (or array) to array of RegExp
-			results.excludeRx = [];
-			if (config.excludeRx) {
-				results.excludeRx = results.excludeRx
-					.concat(config.excludeRx)
-					.map(function (rx) {
-						return typeof rx == 'string' ? new RegExp(rx) : rx;
-					});
-			}
+			// convert excludes array to excludeIds hashmap
+			results.excludes.forEach(function (exclude) {
+				results.excludeIds[exclude] = true;
+			});
+
+			// convert config.excludeRx RegExp/string array to RegExp array
+			results.excludeRx = results.excludeRx
+				.map(function (rx) {
+					return typeof rx == 'string' ? new RegExp(rx) : rx;
+				});
 
 			if (loader) {
 				log.info('Loader to be bundled:', loader);
@@ -292,12 +292,13 @@ define(function (require) {
 			}
 
 			// configure curl
+			// TODO: put this in its own step rather than a side-effect here
 			curl(config);
+
 			return results;
 		}
 
 		function createBuildContext (results) {
-			// TODO: collect, but exclude "config.excludes" from output
 			var discovered = [];
 
 			return {
@@ -331,13 +332,13 @@ define(function (require) {
 						return ioText.getWriter(joinPaths('.cram/meta', ctx.absId + '.json'))(contents);
 					},
 					collect: function (id, thing) {
-						var top, excluded;
-						excluded = (id in discovered)
+						var top, skip;
+						skip = (id in discovered)
 							|| (id in results.excludeIds)
 							|| results.excludeRx.some(function (rx) {
 								return rx.test(id);
 							});
-						if (excluded) return;
+						if (skip) return;
 						top = discovered.length;
 						discovered[id] = top;
 						discovered[top] = thing;
@@ -381,6 +382,7 @@ define(function (require) {
 			'-m': 'includes',
 			'--main': 'includes',
 			'--include': 'includes',
+			'--exclude': 'excludes',
 			'-r': 'appRoot',
 			'--root': 'appRoot',
 			'--appRoot': 'appRoot',
@@ -402,7 +404,8 @@ define(function (require) {
 			appRoot: '',
 			output: '',
 			configFiles: [],
-			includes: []
+			includes: [],
+			excludes: []
 		};
 
 		log = console.log.bind(console);
@@ -528,6 +531,10 @@ define(function (require) {
 			},
 			'includes': {
 				help: 'includes the following file into the bundle.\n'
+					+ multiOptionText
+			},
+			'excludes': {
+				help: 'excludes the following file from the bundle.\n'
 					+ multiOptionText
 			},
 			'appRoot': {
