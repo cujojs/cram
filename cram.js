@@ -604,5 +604,5 @@ define(function (require) {
 	typeof define == 'function' && define.amd && define,
 	typeof curl == 'function' && curl || typeof require == 'function' && require,
 	typeof define == 'function' && define.amd || function (factory) { module.exports = factory(require); },
-	process && process.argv ? process.argv.slice(2) : Array.prototype.slice.apply(arguments)
+	typeof process != 'undefined' && process.argv ? process.argv.slice(2) : Array.prototype.slice.apply(arguments)
 ));
