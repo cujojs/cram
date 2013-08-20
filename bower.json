@@ -1,9 +1,9 @@
 {
 	"name": "cram",
-	"version": "0.7.3",
+	"version": "0.7.3a",
 	"dependencies": {
 		"when": "~1",
-		"curl": ">=0.7.4"
+		"curl": ">=0.7.6"
 	},
 	"ignore": [
 		"node_modules",

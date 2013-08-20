@@ -366,6 +366,7 @@ define(function (require) {
 		// ensure that any previous code that didn't end correctly (ends
 		// in a comment line without a line feed, for instance) doesn't
 		// cause this source code to fail
+		if (!source) return source;
 		if (!/\n\s*$/.test(source)) source += '\n';
 		if (!/^\s*;|^\s*\//.test(source)) source = '\n;' + source;
 		return source;
