@@ -241,6 +241,7 @@ define(function (require) {
 			config = results.config;
 
 			if (!results.modules) results.modules = [];
+			if (config.includes) results.modules = results.modules.concat(config.includes);
 			if (args.includes) results.modules = results.modules.concat(args.includes);
 			if (!results.excludes) results.excludes = [];
 			if (config.excludes) results.excludes = results.excludes.concat(config.excludes);
