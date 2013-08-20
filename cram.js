@@ -108,7 +108,7 @@ define(function (require) {
 
 		if (args.configFiles) {
 			configs = when.map(args.configFiles, function (file) {
-				return ioJson.getReader(file)();
+				return ioJson.getReader(joinPaths(currDir(), file))();
 			});
 		}
 
