@@ -18,10 +18,6 @@ To run cram from any folder:
 npm install -g cram
 ```
 
-### RingoJS
-
-TBD
-
 ### Bower
 
 TBD
@@ -30,4 +26,5 @@ TBD
 
 0.7.4
 
+* Better module parsing (fixes some issues with lodash)
 * Fixes around literal RegExps
