@@ -3,7 +3,7 @@
 	"version": "0.7.4",
 	"dependencies": {
 		"when": "~1",
-		"curl": ">=0.7.6"
+		"curl": "~0.8"
 	},
 	"ignore": [
 		"node_modules",
