@@ -26,6 +26,7 @@ TBD
 
 0.7.5
 
+* Improves support for i18n and CommonJS modules via curl.js 0.8
 * Improve module parsing (fixes some issues with lodash).
 * Parse literal RegExps better.
 * Include simple example apps.
