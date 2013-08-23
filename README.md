@@ -24,7 +24,11 @@ TBD
 
 ## Release notes
 
-0.7.4
+0.7.5
 
-* Better module parsing (fixes some issues with lodash)
-* Fixes around literal RegExps
+* Improve module parsing (fixes some issues with lodash).
+* Parse literal RegExps better.
+* Include simple example apps.
+* Find build override json files without absolute paths.
+* Fix many other minor things.
+
