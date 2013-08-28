@@ -92,7 +92,7 @@ for building a bundle.  You can override the configuration by providing override
 to cram like this, for example:
 
 ```
-ringo path/to/cram myapp/index.html build_overrides.json
+node path/to/cram myapp/index.html build_overrides.json
 ```
 
 Read up on [configuration options](options.md) for more information.

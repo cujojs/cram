@@ -60,6 +60,8 @@ following additions and caveats.
 	also be used to exclude the ids of modules from the bundle
 * `paths`, `packages`, `plugins`, and `preloads`: unlike other config options,
 these lists are merged with the same lists in earlier config files.
+* `apiName`, `apiContext`, `defineName`, and `defineContext`
+  are not yet supported.
 
 The caveat to the the merged lists is that it's impossible to remove items
 from the lists.  You can, however, remove the entire list by specifying a `null`
@@ -90,6 +92,9 @@ precedence.
 	-m --main --include
 		includes the following file into the bundle.
 		You may specify more than one by repeating this option.
+	--exclude
+		excludes the following file from the bundle.
+		You may specify more than one by repeating this option.
 	-r --root --appRoot
 		specifies the path from the current working directory to
 		the effective location of your html documents.  This serves as the
@@ -97,9 +102,8 @@ precedence.
 	-c --config
 		specifies an AMD configuration file.
 		You may specify more than one by repeating this option.
+	-o --output
+		specifies the output folder for the generated bundle(s).
 	--loader -l
 		tells cram to include the following file as an AMD loader.
-	-o --output
-		specifies the output file for the generated bundle(s).
-		the folder must already exist.
 ```

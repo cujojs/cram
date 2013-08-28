@@ -29,9 +29,8 @@ See the [README](../README.md) file for installation instructions.
 cram.js offers:
 
 * Out-of-the-box, no-configuration operation for simple applications
-* Transparency and helpful feedback*
+* Transparency and helpful feedback
 * High performance operation
-* Choice of execution environment: runs in Node.js, RingoJS, and browsers*
 
 Web apps built with cram.js enjoy:
 
@@ -60,16 +59,16 @@ node path/to/cram mywebapp/index.html build-options.json
 ```
 
 Instruct cram.js to inspect the run.js file (the AMD configuration file) of a
-web app that uses dynamic page rendering:
+web app that does not use a static html file:
 
 ```
-ringo path/to/cram mywebapp/ mywebapp/run.js build-options.json
+node path/to/cram mywebapp/ mywebapp/run.js build-options.json
 ```
 
 Explicitly direct cram.js to create a bundle using options from a JSON file:
 
 ```
-ringo path/to/cram --config build-options.json --include mywebapp/curl/src/curl.js -- output mywebapp/app.js
+node path/to/cram --config build-options.json --include mywebapp/curl/src/curl.js --output mywebapp/app.js
 ```
 
 Using node/npm, you can install cram globally via `npm install -g cram`.  This
