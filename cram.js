@@ -86,6 +86,9 @@ define(function (require) {
 		fail(ex);
 	}
 
+	// TODO: return API
+	// return api(io);
+
 	function start(when, sequence, compile, link, getCtx, grok, ioText, ioJson, merge, log) {
 		var cramSequence, grokked, configs;
 
@@ -601,7 +604,7 @@ define(function (require) {
 });
 }(
 	typeof global != 'undefined' ? global : this,
-	typeof define == 'function' && define.amd && define,
+	typeof define == 'function' && define.amd ? define : function (factory) { module.exports = factory(require); },
 	typeof curl == 'function' && curl || typeof require == 'function' && require,
 	typeof define == 'function' && define.amd || function (factory) { module.exports = factory(require); },
 	typeof process != 'undefined' && process.argv ? process.argv.slice(2) : Array.prototype.slice.apply(arguments)
