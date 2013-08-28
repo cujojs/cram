@@ -1,6 +1,6 @@
 # i18n example
 
-This example atempts to cram lodash, which is very convoluted internally.
+This example attempts to cram lodash, which is very convoluted internally.
 If we can cram lodash, we can cram virtually anything. :)
 
 To run:
