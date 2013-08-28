@@ -1,6 +1,6 @@
 {
 	"name": "cram",
-	"version": "0.7.5",
+	"version": "0.7.6",
 	"description": "An AMD-compatible build tool.",
 	"keywords": ["cram", "curl", "cujo", "amd", "build", "module"],
 	"licenses": [

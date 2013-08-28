@@ -9,13 +9,13 @@ See the docs/ folder for instructions and useful information.
 ### node.js
 
 ```
-npm install cram
+npm install --save cram
 ```
 
 To run cram from any folder:
 
 ```
-npm install -g cram
+npm install --global cram
 ```
 
 ### Bower
@@ -23,6 +23,14 @@ npm install -g cram
 TBD
 
 ## Release notes
+
+0.7.6
+
+* Use same logic as curl.js when assigning configuration to modules that
+  may be loaded by a plugin or module loader.
+* Add a legacy loader example.
+* Stop detecting code such as `goog.require('id')` as a CommonJS-style
+  `require('id')`.
 
 0.7.5
 
@@ -32,4 +40,3 @@ TBD
 * Include simple example apps.
 * Find build override json files without absolute paths.
 * Fix many other minor things.
-
