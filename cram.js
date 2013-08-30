@@ -138,7 +138,7 @@ define(function (require) {
 			},
 			function (buildContext) {
 				log.info('Linking');
-				return link(buildContext.discovered, buildContext.io, buildContext.ctx);
+				return link(buildContext.discovered, buildContext.io);
 			},
 			function (buildContext) {
 				if (buildContext.append.length > 0) {
