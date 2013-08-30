@@ -61,7 +61,7 @@ define(function (require) {
 		curl = global.curl;
 
 		// configure curl
-		curl(config);
+		curl.config(config);
 
 		// run!
 		curl(
@@ -70,6 +70,9 @@ define(function (require) {
 				'when/sequence',
 				'cram/lib/compile',
 				'cram/lib/link',
+				'cram/lib/read/fromCache',
+				'cram/lib/write/toBundle',
+				'cram/lib/transform/amdToSimplifiedAmd',
 				'cram/lib/ctx',
 				'cram/lib/grok',
 				'cram/lib/io/text',
@@ -89,7 +92,7 @@ define(function (require) {
 	// TODO: return API
 	// return api(io);
 
-	function start(when, sequence, compile, link, getCtx, grok, ioText, ioJson, merge, log) {
+	function start(when, sequence, compile, link, readFromCache, writeToBundle, transform, getCtx, grok, ioText, ioJson, merge, log) {
 		var cramSequence, grokked, configs;
 
 		grokked = {};
@@ -138,7 +141,11 @@ define(function (require) {
 			},
 			function (buildContext) {
 				log.info('Linking');
-				return link(buildContext.discovered, buildContext.io);
+				return link(
+					function readFromMemory (ctx) { return ctx; },
+					writeToBundle(buildContext.config.output),
+					transform
+				)(buildContext.discovered);
 			},
 			function (buildContext) {
 				if (buildContext.append.length > 0) {
