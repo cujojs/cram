@@ -70,8 +70,9 @@ define(function (require) {
 				'when/sequence',
 				'cram/lib/compile',
 				'cram/lib/link',
-				'cram/lib/read/fromCache',
+				'cram/lib/read/fromCacheOrSource',
 				'cram/lib/write/toBundle',
+				'cram/lib/write/toCache',
 				'cram/lib/transform/amdToSimplifiedAmd',
 				'cram/lib/ctx',
 				'cram/lib/grok',
@@ -92,7 +93,7 @@ define(function (require) {
 	// TODO: return API
 	// return api(io);
 
-	function start(when, sequence, compile, link, readFromCache, writeToBundle, transform, getCtx, grok, ioText, ioJson, merge, log) {
+	function start(when, sequence, compile, link, fromCacheOrSource, writeToBundle, writeToCache, transform, getCtx, grok, ioText, ioJson, merge, log) {
 		var cramSequence, grokked, configs;
 
 		grokked = {};
@@ -126,12 +127,24 @@ define(function (require) {
 			function (buildContext) {
 				if (buildContext.preloads  && buildContext.preloads.length > 0) {
 					log.info('Compiling preloads');
-					return compile(buildContext.preloads || [], buildContext.io, buildContext.ctx);
+					return compile(
+						log,
+						fromCacheOrSource('.cram/meta'),
+						fromCacheOrSource('.cram/meta'),
+						writeToCache('.cram/meta'),
+						buildContext.io.collect
+					)(buildContext.ctx, buildContext.preloads);
 				}
 			},
 			function (buildContext) {
 				log.info('Compiling modules');
-				return compile(buildContext.modules, buildContext.io, buildContext.ctx);
+				return compile(
+					log,
+					fromCacheOrSource('.cram/meta'),
+					fromCacheOrSource('.cram/meta'),
+					writeToCache('.cram/meta'),
+					buildContext.io.collect
+				)(buildContext.ctx, buildContext.modules);
 			},
 			function (buildContext) {
 				if (buildContext.prepend.length > 0) {
