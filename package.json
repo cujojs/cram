@@ -41,7 +41,7 @@
 		"test": "test"
 	},
 	"scripts": {
-		"postinstall": "bower install",
+		"prepublish": "bower install",
 		"test": "buster-test"
 	},
 	"bin": {
