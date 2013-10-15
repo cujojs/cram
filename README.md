@@ -24,6 +24,11 @@ TBD
 
 ## Release notes
 
+0.7.7
+
+* Lots of fixes to the code that groks html files.
+* Internal refactoring and reorganization
+
 0.7.6
 
 * Use same logic as curl.js when assigning configuration to modules that

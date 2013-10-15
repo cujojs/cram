@@ -1,6 +1,6 @@
 {
 	"name": "cram",
-	"version": "0.7.6",
+	"version": "0.7.7",
 	"description": "An AMD-compatible build tool.",
 	"keywords": ["cram", "curl", "cujo", "amd", "build", "module"],
 	"licenses": [
@@ -9,12 +9,10 @@
 			"url": "http://www.opensource.org/licenses/mit-license.php"
 		}
 	],
-	"repositories": [
-		{
-			"type": "git",
-			"url": "https://github.com/cujojs/cram"
-		}
-	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/cujojs/cram"
+	},
 	"bugs": "https://github.com/cujojs/cram/issues",
 	"maintainers": [
 		{
