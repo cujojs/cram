@@ -96,7 +96,19 @@ define(function (require) {
 	function start(when, sequence, compile, link, fromCacheOrSource, writeToBundle, writeToCache, transform, getCtx, grok, ioText, ioJson, merge, log) {
 		var cramSequence, grokked, configs;
 
-		grokked = {};
+		// default props on grokked
+		grokked = {
+			config: {
+				packages: []
+			},
+			prepend: [],
+			modules: [],
+			append: [],
+			warnings: [],
+			errors: [],
+			infos: [],
+			defines: []
+		};
 		configs = [];
 
 		if (args.grok) {
