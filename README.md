@@ -24,6 +24,13 @@ TBD
 
 ## Release notes
 
+0.7.8
+
+* AMD modules are now published to npm, so manually running bower is
+  no longer necessary.
+* Failing to supply some AMD configuration properties no longer causes
+  cram.js to throw.  (Thanks Blaine!)
+
 0.7.7
 
 * Lots of fixes to the code that groks html files.
