@@ -24,6 +24,10 @@ TBD
 
 ## Release notes
 
+0.7.9
+
+* Bug fix: plugins are now responsible for resolving url/filepath.
+
 0.7.8
 
 * AMD modules are now published to npm, so manually running bower is
