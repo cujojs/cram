@@ -15,10 +15,10 @@ define(function (require) {
 'use strict';
 
 	var config, cramFolder, curl,
-		defaultExcludes,
+		forcedExcludes,
 		undef;
 
-	defaultExcludes = { 'curl': true, 'curl/_privileged': true };
+	forcedExcludes = { 'curl': true, 'curl/_privileged': true };
 
 	try {
 
@@ -145,7 +145,7 @@ define(function (require) {
 						fromCacheOrSource('.cram/meta'),
 						writeToCache('.cram/meta'),
 						buildContext.io.collect
-					)(buildContext.ctx, buildContext.preloads);
+					)(buildContext.ctx, buildContext.preloads, buildContext.isExcluded);
 				}
 			},
 			function (buildContext) {
@@ -156,7 +156,7 @@ define(function (require) {
 					fromCacheOrSource('.cram/meta'),
 					writeToCache('.cram/meta'),
 					buildContext.io.collect
-				)(buildContext.ctx, buildContext.modules);
+				)(buildContext.ctx, buildContext.modules, buildContext.isExcluded);
 			},
 			function (buildContext) {
 				if (buildContext.prepend.length > 0) {
@@ -282,7 +282,7 @@ define(function (require) {
 			if (!results.excludes) results.excludes = [];
 			if (config.excludes) results.excludes = results.excludes.concat(config.excludes);
 			if (args.excludes) results.excludes = results.excludes.concat(args.excludes);
-			if (!results.excludeIds) results.excludeIds = defaultExcludes;
+			if (!results.excludeIds) results.excludeIds = forcedExcludes;
 			if (!results.excludeRx) results.excludeRx = [];
 			if (config.excludeRx) results.excludeRx = results.excludeRx.concat(config.excludeRx);
 
@@ -350,6 +350,15 @@ define(function (require) {
 				// collect modules encountered, in order
 				// dual array/hashmap
 				discovered: discovered,
+
+				isExcluded: function (id) {
+					return results.excludes.some(
+							function (excludes) { return id in excludes; }
+						)
+						|| results.excludeRx.some(
+							function (rx) { return rx.test(id); }
+						);
+				},
 
 				// compile phase:
 				// transform it to AMD, if necessary
@@ -446,7 +455,7 @@ define(function (require) {
 			output: '',
 			configFiles: [],
 			includes: [],
-			excludes: []
+			excludes: forcedExcludes
 		};
 
 		log = console.log.bind(console);
