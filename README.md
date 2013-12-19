@@ -27,6 +27,11 @@ TBD
 0.7.9
 
 * Bug fix: plugins are now responsible for resolving url/filepath.
+* Bug fix: Normalize r-value require()s when using loaders, too.
+* Bug fix: Infer appRoot from run.js file, not just index.html.
+  Improve logged messages a bit, too.
+* Bug fix: Excluded modules don't get compiled anymore.
+  Force 'curl' and 'curl/_privileged' to be excluded in all cases.
 
 0.7.8
 
