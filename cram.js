@@ -288,19 +288,22 @@ define(function (require) {
 
 			// figure out where modules are located
 			appRoot = args.appRoot || results.appRoot;
-			if (appRoot) {
-				log.info('`appRoot` resolved to', appRoot);
+			if (appRoot == null) {
+				log.warn('Application root (`appRoot`) not specified and not inferred from HTML or run.js.');
+			}
+			else {
+				log.info('`appRoot` resolved to "' + appRoot + '"');
 				config.baseUrl = joinPaths(appRoot, config.baseUrl);
 			}
 			if (config.baseUrl == '') config.baseUrl = './';
 			if (/^\./.test(config.baseUrl)) {
 				config.baseUrl = joinPaths(currDir(), config.baseUrl);
 			}
-			log.info('`baseUrl` resolved to', config.baseUrl);
+			log.info('`baseUrl` resolved to "' + config.baseUrl + '"');
 
 			loader = args.loader || results.loader;
 			config.output = ensureDotJs(args.output || results.output || '.cram/linked/bundle.js');
-			log.info('`output` resolved to', config.output);
+			log.info('`output` resolved to "' + config.output + '"');
 
 			// remove things that curl will try to auto-load
 			if (config.main) {
@@ -324,7 +327,7 @@ define(function (require) {
 				});
 
 			if (loader) {
-				log.info('Loader to be bundled:', loader);
+				log.info('Loader to be bundled: "' + loader + '"');
 				results.prepend.unshift(ioText.getReader(loader)());
 			}
 
