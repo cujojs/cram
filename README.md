@@ -24,6 +24,11 @@ TBD
 
 ## Release notes
 
+0.7.10
+
+* Ensure that baseUrl and output are converted to absolute paths so
+  node doesn't try to resolve them using node_modules logic.
+
 0.7.9
 
 * Bug fix: plugins are now responsible for resolving url/filepath.
