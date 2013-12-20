@@ -292,17 +292,19 @@ define(function (require) {
 				log.warn('Application root (`appRoot`) not specified and not inferred from HTML or run.js.');
 			}
 			else {
-				log.info('`appRoot` resolved to "' + appRoot + '"');
+				log.info('`appRoot` is inferred to be "' + appRoot + '"');
 				config.baseUrl = joinPaths(appRoot, config.baseUrl);
 			}
-			if (config.baseUrl == '') config.baseUrl = './';
-			if (/^\./.test(config.baseUrl)) {
+			if (!/^\//.test(config.baseUrl)) {
 				config.baseUrl = joinPaths(currDir(), config.baseUrl);
 			}
 			log.info('`baseUrl` resolved to "' + config.baseUrl + '"');
 
 			loader = args.loader || results.loader;
 			config.output = ensureDotJs(args.output || results.output || '.cram/linked/bundle.js');
+			if (!/^\//.test(config.output)) {
+				config.output = joinPaths(currDir(), config.output);
+			}
 			log.info('`output` resolved to "' + config.output + '"');
 
 			// remove things that curl will try to auto-load
