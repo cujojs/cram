@@ -354,12 +354,14 @@ define(function (require) {
 				discovered: discovered,
 
 				isExcluded: function (id) {
-					return results.excludes.some(
-							function (excludes) { return id in excludes; }
-						)
-						|| results.excludeRx.some(
-							function (rx) { return rx.test(id); }
-						);
+					return results.excludes.some(inHashmap)
+						|| results.excludeRx.some(matchesRegExp);
+					function inHashmap (excludes) {
+						return excludes && id in excludes;
+					}
+					function matchesRegExp (rx) {
+						return rx && rx.test(id);
+					}
 				},
 
 				// compile phase:
