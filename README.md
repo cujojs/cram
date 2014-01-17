@@ -24,6 +24,12 @@ TBD
 
 ## Release notes
 
+0.7.11
+
+* Fix compile bug that prevented use of css! plugin.
+* Start using when.js 2.x.
+* Fix configuration merging errors when inspecting both html and run.js.
+
 0.7.10
 
 * Ensure that baseUrl and output are converted to absolute paths so
