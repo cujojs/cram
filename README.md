@@ -24,6 +24,10 @@ TBD
 
 ## Release notes
 
+0.7.12
+
+* Stop failing when plugins output more than one `define()`.
+
 0.7.11
 
 * Fix compile bug that prevented use of css! plugin.
