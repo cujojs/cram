@@ -281,8 +281,14 @@ define(function (require) {
 			if (args.includes) results.modules = results.modules.concat(args.includes);
 			if (!results.excludes) results.excludes = [];
 			if (config.excludes) results.excludes = results.excludes.concat(config.excludes);
-			if (args.excludes) results.excludes = results.excludes.concat(args.excludes);
-			if (!results.excludeIds) results.excludeIds = forcedExcludes;
+			results.excludes = results.excludes.concat(forcedExcludes);
+			if (args.excludes.length) {
+				var argExcludes = args.excludes.reduce(function (excludes, id) {
+					excludes[id] = true;
+					return excludes;
+				}, {});
+				results.excludes = results.excludes.concat(argExcludes);
+			}
 			if (!results.excludeRx) results.excludeRx = [];
 			if (config.excludeRx) results.excludeRx = results.excludeRx.concat(config.excludeRx);
 
@@ -318,8 +324,9 @@ define(function (require) {
 			}
 
 			// convert excludes array to excludeIds hashmap
-			results.excludes.forEach(function (exclude) {
-				results.excludeIds[exclude] = true;
+			results.excludeIds = forcedExcludes;
+			results.excludes.forEach(function (excludeMap) {
+				for (var id in excludeMap) results.excludeIds[id] = true;
 			});
 
 			// convert config.excludeRx RegExp/string array to RegExp array
@@ -354,11 +361,8 @@ define(function (require) {
 				discovered: discovered,
 
 				isExcluded: function (id) {
-					return results.excludes.some(inHashmap)
+					return id in results.excludeIds
 						|| results.excludeRx.some(matchesRegExp);
-					function inHashmap (excludes) {
-						return excludes && id in excludes;
-					}
 					function matchesRegExp (rx) {
 						return rx && rx.test(id);
 					}
@@ -459,7 +463,7 @@ define(function (require) {
 			output: '',
 			configFiles: [],
 			includes: [],
-			excludes: forcedExcludes
+			excludes: []
 		};
 
 		log = console.log.bind(console);
