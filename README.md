@@ -24,6 +24,11 @@ TBD
 
 ## Release notes
 
+0.8.0
+
+* Add a minimal JavaScript API.
+* Correct regression: `--exclude` CLI option now works again.
+
 0.7.12
 
 * Stop failing when plugins output more than one `define()`.
