@@ -14,16 +14,19 @@ define(function (require) {
 /*global environment:true*/
 'use strict';
 
-	var config, cramFolder, curl,
-		forcedExcludes,
+	var runFromCli, forcedExcludes,
+		config, cramFolder, curl, promise,
 		undef;
+
+	// detect if run from command line in node
+	runFromCli = require.main === module;
 
 	forcedExcludes = { 'curl': true, 'curl/_privileged': true };
 
 	try {
 
 		// parse the arguments sent to this file
-		args = parseArgs(args);
+		args = runFromCli ? parseArgs(args) : {};
 
 		// find cram folder (the folder with all of the javascript modules)
 		cramFolder = args.cramFolder;
@@ -63,8 +66,8 @@ define(function (require) {
 		// configure curl
 		curl.config(config);
 
-		// run!
-		curl(
+		// load!
+		promise = curl(
 			[
 				'when',
 				'when/sequence',
@@ -81,7 +84,7 @@ define(function (require) {
 				'cram/lib/config/merge',
 				'cram/lib/log'
 			],
-			start,
+			runFromCli && loaded.bind(null, args),
 			fail
 		);
 
@@ -90,10 +93,17 @@ define(function (require) {
 		fail(ex);
 	}
 
-	// TODO: return API
-	// return api(io);
+	// return API
+	return function (args) {
+		// Note: curl.js's promises are not compliant with A+!!!
+		return promise.then(function () {
+			var loadedArgs = Array.prototype.slice.apply(arguments);
+			loadedArgs.unshift(args);
+			loaded.apply(null, loadedArgs);
+		}, fail);
+	};
 
-	function start(when, sequence, compile, link, fromCacheOrSource, writeToBundle, writeToCache, transform, getCtx, grok, ioText, ioJson, merge, log) {
+	function loaded(args, when, sequence, compile, link, fromCacheOrSource, writeToBundle, writeToCache, transform, getCtx, grok, ioText, ioJson, merge, log) {
 		var cramSequence, grokked, configs;
 
 		// default props on grokked
@@ -183,7 +193,7 @@ define(function (require) {
 			}
 		]);
 
-		when.join(grokked, configs)
+		return when.join(grokked, configs)
 			.spread(mergeConfigsOntoGrokResults)
 			.then(processGrokResults)
 			.then(createBuildContext)
@@ -282,6 +292,7 @@ define(function (require) {
 			if (!results.excludes) results.excludes = [];
 			if (config.excludes) results.excludes = results.excludes.concat(config.excludes);
 			results.excludes = results.excludes.concat(forcedExcludes);
+			if (!args.excludes) args.excludes = [];
 			if (args.excludes.length) {
 				var argExcludes = args.excludes.reduce(function (excludes, id) {
 					excludes[id] = true;
@@ -416,6 +427,7 @@ define(function (require) {
 		function cleanup () {
 			return ioText.closeAll && ioText.closeAll();
 		}
+
 	}
 
 	function guardSource (source) {
