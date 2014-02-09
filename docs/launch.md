@@ -8,8 +8,8 @@ to build your app into a single AMD bundle.
 
 curl.js can be configured in a few ways and in a few places:
 1. inside the HTML
-1. in an AMD module (a.k.a. "run module" -- **preferred!**)
-1. in a non-modular Javascript file (a.k.a. "run.js file")
+1. in an AMD module (a.k.a. "run module" -- **deprecated!**)
+1. in a non-modular script file (a.k.a. "run.js file" -- **preferred!**)
 
 ## HTML configuration
 
@@ -65,6 +65,9 @@ curl.config({
 
 ## Run module configuration
 
+> **Deprecated:** due to their complications, "run modules" are deprecated.
+Consider using a ["run.js file"](run-js-file-configuration) instead.
+
 Using an AMD module to configure curl.js is more flexible than configuring
 inside HTML.  You may use either an anonymous AMD module or a named one.
 
@@ -91,7 +94,7 @@ define(['curl'], function (curl) {
 
 Anonymous run modules can be loaded using a single script element by using
 curl's `data-curl-run` HTML attribute.  cram will create an
-[integrated bundle](#integrated-bundles) that embeds curl.js when it
+[integrated bundle](concepts.md#integrated-bundles) that embeds curl.js when it
 encounters this pattern:
 
 ```html
@@ -142,8 +145,8 @@ configured, yet, the module id is the full path of the file without the ".js"
 extension.
 
 With the single-script pattern, cram will create a single,
-[integrated bundle](#integrated-bundles).  However, cram will create an
-[AMD bundle](#amd-bundles) if it finds the two-script pattern.
+[integrated bundle](concepts.md#integrated-bundles).  However, cram will create an
+[AMD bundle](concepts.md#amd-bundles) if it finds the two-script pattern.
 
 * It's possible to pre-configure curl by declaring a global curl object
 as in the HTML examples above.  You could then omit the path information
@@ -171,12 +174,18 @@ curl(['wire!app/main']).then(function () {
 });
 ```
 
-A run.js file should only be used with a two-script element launch pattern,
-not a single-script pattern:
+A run.js file may be used with a two-script element launch pattern,
+or a single-script pattern:
 
 ```html
 <script src="client/lib/curl/src/curl.js"></script>
 <script data-curl-run src="client/app/run.js"></script>
 ```
 
-cram will create an [AMD bundle](#amd-bundles) in this case.
+```html
+<script data-curl-run="client/app/run.js" src="client/lib/curl/src/curl.js"></script>
+```
+
+With the single-script pattern, cram will create a single,
+[integrated bundle](concepts.md#integrated-bundles).  However, cram will create an
+[AMD bundle](concepts.md#amd-bundles) if it finds the two-script pattern.

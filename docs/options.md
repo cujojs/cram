@@ -28,6 +28,9 @@ and tell cram where to find the app's modules using the `--root`
 node path/to/cram client/myapp/run.js --root client/myapp/
 ```
 
+If the file has a ".html" extension, it is assumed to be an HTML-formatted
+file.  All other file extensions are assumed to reference a run.js file.
+
 ## Compile-time Overrides
 
 However, in most situations, you'll want to specify some configuration options

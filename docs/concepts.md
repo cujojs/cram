@@ -57,11 +57,11 @@ bundle is self-sufficient and no longer needs any type of external loader.
 
 ## run.js
 
-One strategy for launching an AMD application is via a Javascript module that
+One strategy for launching an AMD application is via a global script that
 contains configuration and code to kick start the application.  In cujoJS,
-we call this a "run module".  However, the actual name of the file doesn't
-matter.  During development, the run module is loaded by the browser via a
-normal `<script>` element, but during production, the run module may be part
+we call this a "run.js file".  However, the actual name of the file doesn't
+matter.  During development, the run.js file is loaded by the browser via a
+normal `<script>` element, but during production, the run.js file may be part
 of an [integrated bundle](#integrated-bundles).
 
 ## Compile to AMD

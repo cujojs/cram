@@ -6,3 +6,4 @@
 1. [Concepts](concepts.md)
 1. [Application Launch](launch.md)
 1. [Command-line options](options.md)
+1. [Running cram as a node module](module.md)
