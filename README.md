@@ -28,6 +28,8 @@ TBD
 
 * Add a minimal JavaScript API.
 * Correct regression: `--exclude` CLI option now works again.
+* Handle when factory args > dependent module ids when simplifying AMD defines.
+  For instance, the curl/loader/cjsm11 cram plugin adds an extra arg now.
 
 0.7.12
 
