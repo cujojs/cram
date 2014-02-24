@@ -24,6 +24,11 @@ TBD
 
 ## Release notes
 
+0.8.1
+
+* Fix logic to detect whether cram is running as an npm task.
+* Stop appending to the cached AST data.  It should be overwritten.
+
 0.8.0
 
 * Add a minimal JavaScript API.
