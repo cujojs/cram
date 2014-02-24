@@ -19,7 +19,7 @@ define(function (require) {
 		undef;
 
 	// detect if not run from command line in node
-	runAsModule = !(args && args.length) || require.main !== module;
+	runAsModule = !(args && args.length) && require.main !== module;
 
 	forcedExcludes = { 'curl': true, 'curl/_privileged': true };
 
