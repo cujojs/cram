@@ -14,19 +14,19 @@ define(function (require) {
 /*global environment:true*/
 'use strict';
 
-	var runFromCli, forcedExcludes,
+	var runAsModule, forcedExcludes,
 		config, cramFolder, curl, promise,
 		undef;
 
-	// detect if run from command line in node
-	runFromCli = require.main === module;
+	// detect if not run from command line in node
+	runAsModule = !(args && args.length) || require.main !== module;
 
 	forcedExcludes = { 'curl': true, 'curl/_privileged': true };
 
 	try {
 
 		// parse the arguments sent to this file
-		args = runFromCli ? parseArgs(args) : {};
+		args = parseArgs(args);
 
 		// find cram folder (the folder with all of the javascript modules)
 		cramFolder = args.cramFolder;
@@ -84,7 +84,7 @@ define(function (require) {
 				'cram/lib/config/merge',
 				'cram/lib/log'
 			],
-			runFromCli && loaded.bind(null, args),
+			!runAsModule && loaded.bind(null, args),
 			fail
 		);
 
