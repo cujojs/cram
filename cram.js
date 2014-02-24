@@ -391,7 +391,7 @@ define(function (require) {
 						return ioText.getReader(ctx.withExt(ctx.toUrl(ctx.absId)))();
 					},
 					writeModule: function (ctx, contents) {
-						return ioText.getWriter(results.config.output)(guardSource(contents));
+						return ioText.getWriter(results.config.output, true)(guardSource(contents));
 					},
 					readMeta: function (ctx) {
 						return ioText.getReader(joinPaths('.cram/meta', ctx.absId + '.json'))();
