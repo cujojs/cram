@@ -14,12 +14,40 @@ define(function (require) {
 /*global environment:true*/
 'use strict';
 
-	var runAsModule, forcedExcludes,
+	var optionMap, log, runAsModule, forcedExcludes,
 		config, cramFolder, curl, promise,
 		undef;
 
+	optionMap = {
+		'-m': 'includes',
+		'--main': 'includes',
+		'--include': 'includes',
+		'--exclude': 'excludes',
+		'-r': 'appRoot',
+		'--root': 'appRoot',
+		'--appRoot': 'appRoot',
+		'-c': 'configFiles',
+		'--config': 'configFiles',
+		'-o': 'output',
+		'--output': 'output',
+		'--loader': 'loader',
+		'-l': 'loader',
+		'-s': 'cramFolder',
+		'--src': 'cramFolder',
+		'-?': 'help',
+		'-h': 'help',
+		'--help': 'help'
+	};
+
+	log = console.log.bind(console);
+
+
 	// detect if not run from command line in node
 	runAsModule = !(args && args.length) && require.main !== module;
+
+	if (!runAsModule && !args.length) {
+		help(log, optionMap); quitter();
+	}
 
 	forcedExcludes = { 'curl': true, 'curl/_privileged': true };
 
@@ -99,7 +127,7 @@ define(function (require) {
 		return promise.then(function () {
 			var loadedArgs = Array.prototype.slice.apply(arguments);
 			loadedArgs.unshift(args);
-			loaded.apply(null, loadedArgs);
+			return loaded.apply(null, loadedArgs);
 		}, fail);
 	};
 
@@ -446,7 +474,7 @@ define(function (require) {
 	 * @return {Object}
 	 */
 	function parseArgs (args) {
-		var optionMap, arg, option, result, log;
+		var optionMap, arg, option, result;
 
 		optionMap = {
 			'-m': 'includes',
@@ -477,12 +505,6 @@ define(function (require) {
 			includes: [],
 			excludes: []
 		};
-
-		log = console.log.bind(console);
-
-		if (!args.length) {
-			help(log, optionMap); quitter();
-		}
 
 		// pop off an arg and compare it to list of known option names
 		while ((arg = args.shift())) {
@@ -567,13 +589,14 @@ define(function (require) {
 	}
 
 	function fail (ex) {
-		console.log('cram failed: ', ex && ex.message || ex);
-		if (ex && ex.stack) console.log(ex.stack);
+		log('cram failed: ', ex && ex.message || ex);
+		if (ex && ex.stack) log(ex.stack);
 		quitter(1);
 	}
 
 	function quitter (code) {
-		if (typeof process !== 'undefined' && process.exit) {
+		if (runAsModule) return;
+		else if (typeof process !== 'undefined' && process.exit) {
 			process.exit(code);
 		}
 		else if (typeof quit == 'function') {
