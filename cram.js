@@ -15,7 +15,7 @@ define(function (require) {
 'use strict';
 
 	var optionMap, log, runAsModule, forcedExcludes,
-		config, cramFolder, curl, promise,
+		config, cramFolder, curl, curlPromise,
 		undef;
 
 	optionMap = {
@@ -95,7 +95,7 @@ define(function (require) {
 		curl.config(config);
 
 		// load!
-		promise = curl(
+		curlPromise = curl(
 			[
 				'when',
 				'when/sequence',
@@ -123,12 +123,14 @@ define(function (require) {
 
 	// return API
 	return function (args) {
-		// Note: curl.js's promises are not compliant with A+!!!
-		return promise.then(function () {
-			var loadedArgs = Array.prototype.slice.apply(arguments);
-			loadedArgs.unshift(args);
-			return loaded.apply(null, loadedArgs);
-		}, fail);
+		// return a thenable that fulfills when loaded is fulfilled
+		return Thenable(function (onFulfill, onReject) {
+			curlPromise.then(function () {
+				var curlDeps = Array.prototype.slice.apply(arguments);
+				curlDeps.unshift(args);
+				loaded.apply(null, curlDeps).then(onFulfill, onReject);
+			}, onReject);
+		});
 	};
 
 	function loaded(args, when, sequence, compile, link, fromCacheOrSource, writeToBundle, writeToCache, transform, getCtx, grok, ioText, ioJson, merge, log) {
@@ -686,6 +688,76 @@ define(function (require) {
 			return output;
 		}
 
+	}
+
+	/**
+	 * Simple Thenable implementation.
+	 * @param resolver
+	 * @returns {{then: function (onFulfill: function, onReject: function}}
+	 * @constructor
+	 */
+	function Thenable (resolver) {
+		var then, nextFulfill, nextReject;
+
+		then = push;
+		resolver(fulfill, reject);
+
+		return {
+			then: function (onFulfill, onReject) {
+				return then.call(this, onFulfill, onReject);
+			}
+		};
+
+		function push (onFulfill, onReject) {
+			return new Thenable(function (childFulfill, childReject) {
+				nextFulfill = function (value) {
+					tryBoth(value, onFulfill, onReject)
+						&& tryBoth(value, childFulfill, childReject);
+				};
+				nextReject = function (ex) {
+					tryBoth(ex, onReject, failLoud)
+						 && tryBoth(ex, childReject, failLoud);
+				};
+			});
+		}
+
+		function fulfill (value) {
+			then = fulfiller(value);
+			if (nextFulfill) nextFulfill(value);
+		}
+
+		function reject (ex) {
+			then = rejecter(ex);
+			if (nextReject) nextReject(ex);
+		}
+	}
+
+	function fulfiller (value) {
+		return function (onFulfill, onReject) {
+			onFulfill(value);
+			return this;
+		};
+	}
+
+	function rejecter (value) {
+		return function (onFulfill, onReject) {
+			onReject(value);
+			return this;
+		};
+	}
+
+	function tryBoth (value, first, second) {
+		try {
+			first(value);
+			return true;
+		}
+		catch (ex) {
+			second(ex);
+		}
+	}
+
+	function failLoud (ex) {
+		throw ex;
 	}
 
 });
