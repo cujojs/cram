@@ -1,10 +1,13 @@
 {
 	"name": "cram",
 	"version": "0.8.1",
+	"main": "./cram.js",
+	"moduleType": [ "amd", "node" ],
 	"dependencies": {
 		"when": "~2",
 		"curl": "~0.8"
 	},
+	"keywords": [ "cram", "curl", "cujo", "amd", "build", "bundle", "commonjs", "module" ],
 	"ignore": [
 		"node_modules",
 		"amd_modules"

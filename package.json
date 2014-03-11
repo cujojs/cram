@@ -2,7 +2,7 @@
 	"name": "cram",
 	"version": "0.8.1",
 	"description": "An AMD-compatible build tool.",
-	"keywords": ["cram", "curl", "cujo", "amd", "build", "module"],
+	"keywords": [ "cram", "curl", "cujo", "amd", "build", "bundle", "commonjs", "module" ],
 	"licenses": [
 		{
 			"type": "MIT",
@@ -34,7 +34,8 @@
 		"buster": "~0.6",
 		"bower": ""
 	},
-	"main": "./cram",
+	"main": "./cram.js",
+	"moduleType": [ "amd", "node" ],
 	"directories": {
 		"test": "test"
 	},
