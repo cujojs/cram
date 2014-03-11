@@ -26,7 +26,9 @@ TBD
 
 0.8.1
 
-* Fix logic to detect whether cram is running as an npm task.
+* Fix logic to detect whether cram is running as an npm task and ensure
+  that the promise returned from the API only resolves once the bundle
+  is created.
 * Stop appending to the cached AST data.  It should be overwritten.
 
 0.8.0
