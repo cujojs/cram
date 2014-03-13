@@ -1,3 +1,181 @@
 #!/usr/bin/env node
 
-require('../cram');
+var cram = require('../cram');
+
+var optionMap = {
+	'-m': 'includes',
+	'--main': 'includes',
+	'--include': 'includes',
+	'--exclude': 'excludes',
+	'-r': 'appRoot',
+	'--root': 'appRoot',
+	'--appRoot': 'appRoot',
+	'-c': 'configFiles',
+	'--config': 'configFiles',
+	'-o': 'output',
+	'--output': 'output',
+	'--loader': 'loader',
+	'-l': 'loader',
+	'-s': 'cramFolder',
+	'--src': 'cramFolder',
+	'-?': 'help',
+	'-h': 'help',
+	'--help': 'help'
+};
+
+var log = console.log.bind(console);
+
+var args = process.argv.slice(2);
+
+if (!args.length) {
+	help(log, optionMap);
+}
+else {
+	try {
+		args = parseArgs(args);
+		cram(args).then(null, fail);
+	}
+	catch (ex) {
+		fail(ex);
+	}
+}
+
+function fail (ex) {
+	log('cram failed: ', ex && ex.message || ex);
+	if (ex && ex.stack) log(ex.stack);
+	throw ex;
+}
+
+
+/**
+ * Processes command-line arguments.
+ * @param args {Array}
+ * @return {Object}
+ */
+function parseArgs (args) {
+	var arg, option, result;
+
+	// defaults
+	result = {
+		appRoot: '',
+		output: '',
+		configFiles: [],
+		includes: [],
+		excludes: []
+	};
+
+	// pop off an arg and compare it to list of known option names
+	while ((arg = args.shift())) {
+
+		option = optionMap[arg];
+
+		// check if the first arg is a run.js file to grok
+		if (arg.charAt(0) != '-' && !('grok' in result)) {
+			result.grok = arg;
+		}
+		else {
+			if (!('grok' in result)) result.grok = false;
+			// check if arg is a config file or option
+			if (arg.charAt(0) != '-') {
+				// this must be a config file
+				result.configFiles.push(arg);
+			}
+			else if (option == 'help') {
+				help(log, optionMap); quitter();
+			}
+			else if (!option) {
+				throw new Error('unknown option: ' + arg);
+			}
+			else if (result[option] && result[option].push) {
+				// array. push next arg onto array
+				result[option].push(args.shift());
+			}
+			else {
+				// grab next arg as value of option
+				result[option] = args.shift();
+			}
+		}
+
+	}
+	return result;
+}
+
+function help (write, optionsMap) {
+	var skipLine, header, usage, autoGrok, footer, multiOptionText, helpMap;
+
+	skipLine ='\n\n';
+	header = 'cram, an AMD-compatible module bundler. An element of cujoJS.';
+	usage = 'Usage:\n\t\t`node node_modules/bin/cram [options]`\n\tor\t`cram [options] (if installed globally or from an npm script)';
+	autoGrok = 'Auto-grok run.js (app bootstrap) file:\n\t\t`cram index.html build_override.json [options]`\n\tor\t`cram run.js build_override.json -root path/to/modules [options]`';
+	footer = 'More help can be found at http://cujojs.com/';
+	multiOptionText = 'You may specify more than one by repeating this option.';
+
+	helpMap = {
+		'help': {
+			help: 'provides this help message.'
+		},
+		'includes': {
+			help: 'includes the following file into the bundle.\n'
+				+ multiOptionText
+		},
+		'excludes': {
+			help: 'excludes the following file from the bundle.\n'
+				+ multiOptionText
+		},
+		'appRoot': {
+			help: 'specifies the path from the current working directory to \n'
+				+ 'the effective location of your html documents.  This serves as the \n'
+				+ 'root of the baseUrl in an AMD configuration.'
+		},
+		'configFiles': {
+			help: 'specifies an AMD configuration file. \n' + multiOptionText
+		},
+		'output': {
+			help: 'specifies the output folder for the generated bundle(s).'
+		},
+		'loader': {
+			help: 'tells cram to include the following file as an AMD loader.'
+		},
+		'cramFolder': {
+			help: 'tells cram where its source files are. DEPRECATED'
+		}
+	};
+
+	helpMap = fillHelpMap(helpMap, optionsMap);
+
+	write(
+		header + skipLine +
+		usage + skipLine +
+		autoGrok + skipLine +
+		helpMapToText(helpMap) + skipLine +
+		footer
+	);
+
+	function fillHelpMap (helpMap, optionsMap) {
+		var p, option, helpItem;
+
+		for (p in optionsMap) {
+			option = optionsMap[p];
+			helpItem = helpMap[option];
+			if (helpItem) {
+				if (!helpItem.commands) helpItem.commands = [];
+				helpItem.commands.push(p);
+			}
+		}
+
+		return helpMap;
+	}
+
+	function helpMapToText (helpMap) {
+		var output, p;
+		output = 'Options:\n';
+		for (p in helpMap) {
+			// options line
+			output += '\t' + helpMap[p].commands.join(' ') + '\n';
+			// indented, descriptive text
+			output += '\t\t' + helpMap[p].help.replace(/\n/g, '\n\t\t') + '\n';
+		}
+		return output;
+	}
+
+}

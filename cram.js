@@ -9,52 +9,21 @@
  *
  */
 
-(function (global, globalDefine, globalLoader, define, args) {
+(function (global, globalDefine, globalLoader, define) {
 define(function (require) {
 /*global environment:true*/
 'use strict';
 
-	var optionMap, log, runAsModule, forcedExcludes,
-		config, cramFolder, curl, curlPromise,
+	var log, forcedExcludes, cramFolder, curl, curlPromise,
 		undef;
-
-	optionMap = {
-		'-m': 'includes',
-		'--main': 'includes',
-		'--include': 'includes',
-		'--exclude': 'excludes',
-		'-r': 'appRoot',
-		'--root': 'appRoot',
-		'--appRoot': 'appRoot',
-		'-c': 'configFiles',
-		'--config': 'configFiles',
-		'-o': 'output',
-		'--output': 'output',
-		'--loader': 'loader',
-		'-l': 'loader',
-		'-s': 'cramFolder',
-		'--src': 'cramFolder',
-		'-?': 'help',
-		'-h': 'help',
-		'--help': 'help'
-	};
 
 	log = console.log.bind(console);
 
-
-	// detect if not run from command line in node
-	runAsModule = !(args && args.length) && require.main !== module;
-
-	if (!runAsModule && !args.length) {
-		help(log, optionMap); quitter();
-	}
-
 	forcedExcludes = { 'curl': true, 'curl/_privileged': true };
 
-	try {
-
-		// parse the arguments sent to this file
-		args = parseArgs(args);
+	// return API
+	return function (args) {
+		var config;
 
 		// find cram folder (the folder with all of the javascript modules)
 		cramFolder = args.cramFolder;
@@ -91,38 +60,32 @@ define(function (require) {
 		}
 		curl = global.curl;
 
-		// configure curl
-		curl.config(config);
+		// only load AMD resources once
+		if (!curlPromise) {
+			// configure curl
+			curl.config(config);
 
-		// load!
-		curlPromise = curl(
-			[
-				'when',
-				'when/sequence',
-				'cram/lib/compile',
-				'cram/lib/link',
-				'cram/lib/read/fromCacheOrSource',
-				'cram/lib/write/toBundle',
-				'cram/lib/write/toCache',
-				'cram/lib/transform/amdToSimplifiedAmd',
-				'cram/lib/ctx',
-				'cram/lib/grok',
-				'cram/lib/io/text',
-				'cram/lib/io/json',
-				'cram/lib/config/merge',
-				'cram/lib/log'
-			],
-			!runAsModule && loaded.bind(null, args),
-			fail
-		);
+			// load AMD resources
+			curlPromise = curl(
+				[
+					'when',
+					'when/sequence',
+					'cram/lib/compile',
+					'cram/lib/link',
+					'cram/lib/read/fromCacheOrSource',
+					'cram/lib/write/toBundle',
+					'cram/lib/write/toCache',
+					'cram/lib/transform/amdToSimplifiedAmd',
+					'cram/lib/ctx',
+					'cram/lib/grok',
+					'cram/lib/io/text',
+					'cram/lib/io/json',
+					'cram/lib/config/merge',
+					'cram/lib/log'
+				]
+			);
+		}
 
-	}
-	catch (ex) {
-		fail(ex);
-	}
-
-	// return API
-	return function (args) {
 		// return a thenable that fulfills when loaded is fulfilled
 		return Thenable(function (onFulfill, onReject) {
 			curlPromise.then(function () {
@@ -470,80 +433,6 @@ define(function (require) {
 		return source;
 	}
 
-	/**
-	 * Processes command-line arguments.
-	 * @param args {Array}
-	 * @return {Object}
-	 */
-	function parseArgs (args) {
-		var optionMap, arg, option, result;
-
-		optionMap = {
-			'-m': 'includes',
-			'--main': 'includes',
-			'--include': 'includes',
-			'--exclude': 'excludes',
-			'-r': 'appRoot',
-			'--root': 'appRoot',
-			'--appRoot': 'appRoot',
-			'-c': 'configFiles',
-			'--config': 'configFiles',
-			'-o': 'output',
-			'--output': 'output',
-			'--loader': 'loader',
-			'-l': 'loader',
-			'-s': 'cramFolder',
-			'--src': 'cramFolder',
-			'-?': 'help',
-			'-h': 'help',
-			'--help': 'help'
-		};
-
-		// defaults
-		result = {
-			appRoot: '',
-			output: '',
-			configFiles: [],
-			includes: [],
-			excludes: []
-		};
-
-		// pop off an arg and compare it to list of known option names
-		while ((arg = args.shift())) {
-
-			option = optionMap[arg];
-
-			// check if the first arg is a run.js file to grok
-			if (arg.charAt(0) != '-' && !('grok' in result)) {
-				result.grok = arg;
-			}
-			else {
-				if (!('grok' in result)) result.grok = false;
-				// check if arg is a config file or option
-				if (arg.charAt(0) != '-') {
-					// this must be a config file
-					result.configFiles.push(arg);
-				}
-				else if (option == 'help') {
-					help(log, optionMap); quitter();
-				}
-				else if (!option) {
-					throw new Error('unknown option: ' + arg);
-				}
-				else if (result[option] && result[option].push) {
-					// array. push next arg onto array
-					result[option].push(args.shift());
-				}
-				else {
-					// grab next arg as value of option
-					result[option] = args.shift();
-				}
-			}
-
-		}
-		return result;
-	}
-
 	function joinPaths (path1, path2) {
 		var args;
 
@@ -593,101 +482,7 @@ define(function (require) {
 	function fail (ex) {
 		log('cram failed: ', ex && ex.message || ex);
 		if (ex && ex.stack) log(ex.stack);
-		quitter(1);
-	}
-
-	function quitter (code) {
-		if (runAsModule) return;
-		else if (typeof process !== 'undefined' && process.exit) {
-			process.exit(code);
-		}
-		else if (typeof quit == 'function') {
-			quit(code);
-		}
-		else {
-			throw "quitting";
-		}
-
-	}
-
-	function help (write, optionsMap) {
-		var skipLine, header, usage, autoGrok, footer, multiOptionText, helpMap;
-
-		skipLine ='\n\n';
-		header = 'cram, an AMD-compatible module bundler. An element of cujoJS.';
-		usage = 'Usage:\n\t\t`node cram.js [options]`\n\tor\t`ringo cram.js [options]`\n\tor\t`cram [options] (if installed globally)';
-		autoGrok = 'Auto-grok run.js (app bootstrap) file:\n\t\t`cram index.html build_override.json [options]`\n\tor\t`cram run.js build_override.json -root path/to/modules [options]`';
-		footer = 'More help can be found at http://cujojs.com/';
-		multiOptionText = 'You may specify more than one by repeating this option.';
-
-		helpMap = {
-			'help': {
-				help: 'provides this help message.'
-			},
-			'includes': {
-				help: 'includes the following file into the bundle.\n'
-					+ multiOptionText
-			},
-			'excludes': {
-				help: 'excludes the following file from the bundle.\n'
-					+ multiOptionText
-			},
-			'appRoot': {
-				help: 'specifies the path from the current working directory to \n'
-					+ 'the effective location of your html documents.  This serves as the \n'
-					+ 'root of the baseUrl in an AMD configuration.'
-			},
-			'configFiles': {
-				help: 'specifies an AMD configuration file. \n' + multiOptionText
-			},
-			'output': {
-				help: 'specifies the output folder for the generated bundle(s).'
-			},
-			'loader': {
-				help: 'tells cram to include the following file as an AMD loader.'
-			},
-			'cramFolder': {
-				help: 'tells cram where its source files are. DEPRECATED'
-			}
-		};
-
-		helpMap = fillHelpMap(helpMap, optionsMap);
-
-		write(
-			header + skipLine +
-			usage + skipLine +
-			autoGrok + skipLine +
-			helpMapToText(helpMap) + skipLine +
-			footer
-		);
-
-		function fillHelpMap (helpMap, optionsMap) {
-			var p, option, helpItem;
-
-			for (p in optionsMap) {
-				option = optionsMap[p];
-				helpItem = helpMap[option];
-				if (helpItem) {
-					if (!helpItem.commands) helpItem.commands = [];
-					helpItem.commands.push(p);
-				}
-			}
-
-			return helpMap;
-		}
-
-		function helpMapToText (helpMap) {
-			var output, p;
-			output = 'Options:\n';
-			for (p in helpMap) {
-				// options line
-				output += '\t' + helpMap[p].commands.join(' ') + '\n';
-				// indented, descriptive text
-				output += '\t\t' + helpMap[p].help.replace(/\n/g, '\n\t\t') + '\n';
-			}
-			return output;
-		}
-
+		throw ex;
 	}
 
 	/**
@@ -734,25 +529,25 @@ define(function (require) {
 
 	function fulfiller (value) {
 		return function (onFulfill, onReject) {
-			onFulfill(value);
+			if (onFulfill) onFulfill(value);
 			return this;
 		};
 	}
 
 	function rejecter (value) {
 		return function (onFulfill, onReject) {
-			onReject(value);
+			if (onReject) onReject(value);
 			return this;
 		};
 	}
 
 	function tryBoth (value, first, second) {
 		try {
-			first(value);
+			if (first) first(value);
 			return true;
 		}
 		catch (ex) {
-			second(ex);
+			if (second) second(ex);
 		}
 	}
 
@@ -765,6 +560,5 @@ define(function (require) {
 	typeof global != 'undefined' ? global : this,
 	typeof define == 'function' && define.amd ? define : function (factory) { module.exports = factory(require); },
 	typeof curl == 'function' && curl || typeof require == 'function' && require,
-	typeof define == 'function' && define.amd || function (factory) { module.exports = factory(require); },
-	typeof process != 'undefined' && process.argv ? process.argv.slice(2) : Array.prototype.slice.apply(arguments)
+	typeof define == 'function' && define.amd || function (factory) { module.exports = factory(require); }
 ));
