@@ -14,7 +14,7 @@ define(function (require) {
 /*global environment:true*/
 'use strict';
 
-	var log, forcedExcludes, cramFolder, curl, curlPromise,
+	var log, forcedExcludes, cramFolder, curl, curlPromise, define,
 		undef;
 
 	log = console.log.bind(console);
@@ -51,17 +51,19 @@ define(function (require) {
 			]
 		};
 
-		if (!global.curl) {
-			globalLoader(joinPaths(config.paths.curl, '../../dist/curl-for-ssjs/curl.js'));
-		}
-		// curl global should be available now
-		if (!global.curl) {
-			throw new Error('curl() was not loaded.');
-		}
-		curl = global.curl;
-
 		// only load AMD resources once
 		if (!curlPromise) {
+
+			if (!global.curl) {
+				globalLoader(joinPaths(config.paths.curl, '../../dist/curl-for-ssjs/curl.js'));
+			}
+			// curl global should be available now
+			if (!global.curl) {
+				throw new Error('curl() was not loaded.');
+			}
+			curl = global.curl;
+			define = global.define;
+
 			// configure curl
 			curl.config(config);
 
@@ -82,7 +84,8 @@ define(function (require) {
 					'cram/lib/io/json',
 					'cram/lib/config/merge',
 					'cram/lib/log'
-				]
+				],
+				disableAmd
 			);
 		}
 
@@ -91,12 +94,23 @@ define(function (require) {
 			curlPromise.then(function () {
 				var curlDeps = Array.prototype.slice.apply(arguments);
 				curlDeps.unshift(args);
-				loaded.apply(null, curlDeps).then(onFulfill, onReject);
+				enableAmd();
+				start.apply(null, curlDeps)
+					.then(disableAmd)
+					.then(onFulfill, onReject);
 			}, onReject);
 		});
 	};
 
-	function loaded(args, when, sequence, compile, link, fromCacheOrSource, writeToBundle, writeToCache, transform, getCtx, grok, ioText, ioJson, merge, log) {
+	function disableAmd () {
+		global.define = globalDefine;
+	}
+
+	function enableAmd () {
+		global.define = define;
+	}
+
+	function start(args, when, sequence, compile, link, fromCacheOrSource, writeToBundle, writeToCache, transform, getCtx, grok, ioText, ioJson, merge, log) {
 		var cramSequence, grokked, configs;
 
 		// default props on grokked
