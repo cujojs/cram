@@ -4,6 +4,9 @@
 
 See the docs/ folder for instructions and useful information.
 
+> **New!** gulp integration via [gulp-cram]()
+  by [@bclozel]()!
+
 ## Installation
 
 ### node.js
@@ -23,6 +26,15 @@ npm install --global cram
 TBD
 
 ## Release notes
+
+0.8.2
+
+* Fix module parsing code to stop prematurely detecting the end of an
+  AMD define when there are regexp literals inside parentheses.
+* Only declare global define() during bundling to help isolate problems
+  with UMD modules  running under node (as with gulp and grunt).
+* Separate argument-parsing code from cramming code so logic to run
+  as a module or as a command-line tool can be done more sanely.
 
 0.8.1
 
