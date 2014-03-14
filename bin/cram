@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+/** MIT License (c) copyright 2010-2014 B Cavalier & J Hann */
 var cram = require('../cram');
 
 var optionMap = {

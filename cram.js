@@ -1,4 +1,4 @@
-/** @license MIT License (c) copyright 2010-2013 B Cavalier & J Hann */
+/** @license MIT License (c) copyright 2010-2014 B Cavalier & J Hann */
 
 /**
  * cram (cujo resource assembler)
