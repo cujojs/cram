@@ -4,8 +4,8 @@
 
 See the docs/ folder for instructions and useful information.
 
-> **New!** gulp integration via [gulp-cram]()
-  by [@bclozel]()!
+> **New!** gulp integration via [gulp-cram](https://github.com/bclozel/gulp-cram)
+  by [@bclozel](//github.com/bclozel)!
 
 ## Installation
 
